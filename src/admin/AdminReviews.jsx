@@ -2,8 +2,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../lib/supabase";
 
-const ADMIN_UID = "c30c2471-a7cf-4f11-8102-98f9c12c214e";
-
 const getProjectName = (slug) =>
   (slug || "unknown-project")
     .split("-")
@@ -18,16 +16,13 @@ const createSlug = (name) =>
     .replace(/^-|-$/g, "");
 
 export default function AdminReviews() {
-  const [session, setSession] = useState(null);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-
   const [reviews, setReviews] = useState([]);
   const [projects, setProjects] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [projectsLoading, setProjectsLoading] = useState(false);
   const [busyId, setBusyId] = useState(null);
+
   const [error, setError] = useState("");
   const [projectMessage, setProjectMessage] = useState("");
 
@@ -38,12 +33,8 @@ export default function AdminReviews() {
   const [projectFilter, setProjectFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const isAdmin = session?.user?.id === ADMIN_UID;
-
   // LOAD REVIEWS
   const loadReviews = useCallback(async () => {
-    if (!session || session.user.id !== ADMIN_UID) return;
-
     setLoading(true);
     setError("");
 
@@ -59,12 +50,10 @@ export default function AdminReviews() {
     }
 
     setLoading(false);
-  }, [session]);
+  }, []);
 
-  // LOAD PROJECTS
+  // LOAD CLIENT PROJECTS
   const loadProjects = useCallback(async () => {
-    if (!session || session.user.id !== ADMIN_UID) return;
-
     setProjectsLoading(true);
 
     const { data, error: fetchError } = await supabase
@@ -79,40 +68,12 @@ export default function AdminReviews() {
     }
 
     setProjectsLoading(false);
-  }, [session]);
-
-  // AUTHENTICATION
-  useEffect(() => {
-    let active = true;
-
-    supabase.auth.getSession().then(({ data }) => {
-      if (active) {
-        setSession(data.session);
-        setLoading(false);
-      }
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      if (active) setSession(nextSession);
-    });
-
-    return () => {
-      active = false;
-      subscription.unsubscribe();
-    };
   }, []);
 
   useEffect(() => {
-    if (session?.user?.id === ADMIN_UID) {
-      loadReviews();
-      loadProjects();
-    } else {
-      setReviews([]);
-      setProjects([]);
-    }
-  }, [session, loadReviews, loadProjects]);
+    loadReviews();
+    loadProjects();
+  }, [loadReviews, loadProjects]);
 
   // PROJECT SLUG PREVIEW
   const slugPreview = useMemo(
@@ -182,6 +143,7 @@ export default function AdminReviews() {
       setProjectMessage(
         `${project.name} is now ${project.active ? "inactive" : "active"}.`
       );
+
       await loadProjects();
     }
 
@@ -201,7 +163,9 @@ export default function AdminReviews() {
       return;
     }
 
-    if (!window.confirm(`Permanently delete ${project.name}?`)) return;
+    if (!window.confirm(`Permanently delete ${project.name}?`)) {
+      return;
+    }
 
     setError("");
     setProjectMessage("");
@@ -240,7 +204,9 @@ export default function AdminReviews() {
   const statsReviews =
     projectFilter === "all"
       ? reviews
-      : reviews.filter((item) => item.project_slug === projectFilter);
+      : reviews.filter(
+          (item) => item.project_slug === projectFilter
+        );
 
   const pending = statsReviews.filter(
     (item) => item.status === "pending"
@@ -254,34 +220,7 @@ export default function AdminReviews() {
     (item) => item.status === "rejected"
   ).length;
 
-  // LOGIN
-  const handleLogin = async (event) => {
-    event.preventDefault();
-
-    setError("");
-    setLoading(true);
-
-    const { data, error: loginError } =
-      await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      });
-
-    if (loginError) {
-      setError(loginError.message);
-      setLoading(false);
-      return;
-    }
-
-    if (data.user?.id !== ADMIN_UID) {
-      await supabase.auth.signOut();
-      setError("This account does not have administrator access.");
-    }
-
-    setLoading(false);
-  };
-
-  // APPROVE / REJECT
+  // APPROVE / REJECT REVIEW
   const updateStatus = async (id, status) => {
     setBusyId(id);
     setError("");
@@ -302,7 +241,9 @@ export default function AdminReviews() {
 
   // DELETE REVIEW
   const deleteReview = async (id) => {
-    if (!window.confirm("Permanently delete this review?")) return;
+    if (!window.confirm("Permanently delete this review?")) {
+      return;
+    }
 
     setBusyId(id);
     setError("");
@@ -321,98 +262,56 @@ export default function AdminReviews() {
     setBusyId(null);
   };
 
-  // LOGOUT
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setReviews([]);
-    setProjects([]);
-  };
-
-  // SESSION CHECK
-  if (loading && !session) {
-    return (
-      <main className="admin-reviews-page">
-        <section className="admin-login">
-          <span className="review-eyebrow">ADI / PRIVATE ACCESS</span>
-          <h1>ADMIN<span>.</span></h1>
-          <p>Checking your session...</p>
-        </section>
-      </main>
-    );
-  }
-
-  // LOGIN PAGE
-  if (!session || !isAdmin) {
-    return (
-      <main className="admin-reviews-page">
-        <section className="admin-login">
-          <span className="review-eyebrow">ADI / PRIVATE ACCESS</span>
-          <h1>ADMIN<span>.</span></h1>
-          <p>Sign in to manage client feedback.</p>
-
-          <form onSubmit={handleLogin}>
-            <label htmlFor="admin-email">EMAIL</label>
-            <input
-              id="admin-email"
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="Admin email"
-              required
-            />
-
-            <label htmlFor="admin-password">PASSWORD</label>
-            <input
-              id="admin-password"
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="Password"
-              required
-            />
-
-            {error && <p className="review-form-error">{error}</p>}
-
-            <button type="submit" disabled={loading}>
-              {loading ? "PLEASE WAIT..." : "SIGN IN"} ↗
-            </button>
-          </form>
-        </section>
-      </main>
-    );
-  }
-
   return (
     <main className="admin-reviews-page">
       <section className="admin-reviews-container">
 
-        {/* DASHBOARD HEADER */}
+        {/* PAGE HEADER */}
         <header className="admin-reviews-header">
           <div>
             <span className="review-eyebrow">
               ADI / PRIVATE DASHBOARD
             </span>
-            <h1>CLIENT <span>REVIEWS.</span></h1>
-            <p>Manage your projects and client feedback.</p>
-          </div>
 
-          <button onClick={handleLogout} className="admin-logout">
-            LOG OUT ↗
-          </button>
+            <h1>
+              CLIENT <span>REVIEWS.</span>
+            </h1>
+
+            <p>
+              Manage your client projects and feedback.
+            </p>
+          </div>
         </header>
+
+        {error && (
+          <p className="review-form-error" role="alert">
+            {error}
+          </p>
+        )}
 
         {/* PROJECT MANAGEMENT */}
         <section className="admin-project-management">
 
           <div className="admin-project-heading">
             <div>
-              <span className="admin-section-index">01 / WORKSPACE</span>
-              <h2>PROJECT MANAGEMENT<span>.</span></h2>
-              <p>Manage the projects displayed in your client review form.</p>
+              <span className="admin-section-index">
+                01 / WORKSPACE
+              </span>
+
+              <h2>
+                PROJECT MANAGEMENT<span>.</span>
+              </h2>
+
+              <p>
+                Manage the projects displayed in your client review form.
+              </p>
             </div>
 
             <div className="admin-project-total">
-              <strong>{projects.length.toString().padStart(2, "0")}</strong>
+              <strong>
+                {projects.length.toString().padStart(2, "0")}
+              </strong>
+
               <span>TOTAL PROJECTS</span>
             </div>
           </div>
@@ -424,18 +323,24 @@ export default function AdminReviews() {
           >
             <div className="admin-add-project-top">
               <span>CREATE NEW PROJECT</span>
-              <span className="admin-add-project-number">NEW ENTRY / 001</span>
+              <span className="admin-add-project-number">
+                NEW ENTRY / 001
+              </span>
             </div>
 
             <div className="admin-add-project-fields">
               <div className="admin-project-input-wrap">
-                <label htmlFor="new-project-name">PROJECT NAME</label>
+                <label htmlFor="new-project-name">
+                  PROJECT NAME
+                </label>
 
                 <input
                   id="new-project-name"
                   type="text"
                   value={projectName}
-                  onChange={(event) => setProjectName(event.target.value)}
+                  onChange={(event) =>
+                    setProjectName(event.target.value)
+                  }
                   placeholder="e.g. Creative Studio Website"
                   maxLength={80}
                   required
@@ -443,12 +348,16 @@ export default function AdminReviews() {
 
                 <small>
                   <span>GENERATED SLUG</span>
-                  <strong>/{slugPreview || "your-project-name"}</strong>
+                  <strong>
+                    /{slugPreview || "your-project-name"}
+                  </strong>
                 </small>
               </div>
 
               <button type="submit" disabled={addingProject}>
-                <span>{addingProject ? "ADDING..." : "ADD PROJECT"}</span>
+                <span>
+                  {addingProject ? "ADDING..." : "ADD PROJECT"}
+                </span>
                 <span>↗</span>
               </button>
             </div>
@@ -460,10 +369,13 @@ export default function AdminReviews() {
             </p>
           )}
 
-          {/* PROJECT LIST */}
+          {/* PROJECT DIRECTORY */}
           <div className="admin-project-list-heading">
             <div>
-              <span className="admin-section-index">02 / DIRECTORY</span>
+              <span className="admin-section-index">
+                02 / DIRECTORY
+              </span>
+
               <h3>YOUR PROJECTS</h3>
             </div>
 
@@ -471,9 +383,13 @@ export default function AdminReviews() {
           </div>
 
           {projectsLoading ? (
-            <p className="admin-empty">Loading projects...</p>
+            <p className="admin-empty">
+              Loading projects...
+            </p>
           ) : projects.length === 0 ? (
-            <p className="admin-empty">No projects registered yet.</p>
+            <p className="admin-empty">
+              No projects registered yet.
+            </p>
           ) : (
             <div className="admin-project-list">
               {projects.map((project, index) => (
@@ -511,8 +427,8 @@ export default function AdminReviews() {
                       {projectActionSlug === project.slug
                         ? "PLEASE WAIT..."
                         : project.active
-                        ? "DEACTIVATE"
-                        : "ACTIVATE"}
+                          ? "DEACTIVATE"
+                          : "ACTIVATE"}
                     </button>
 
                     <button
@@ -529,13 +445,6 @@ export default function AdminReviews() {
             </div>
           )}
         </section>
-
-        {/* ERRORS */}
-        {error && (
-          <p className="review-form-error" role="alert">
-            {error}
-          </p>
-        )}
 
         {/* REVIEW STATISTICS */}
         <div className="admin-review-stats">
@@ -555,30 +464,37 @@ export default function AdminReviews() {
           </div>
         </div>
 
-        {/* REVIEW LIST */}
+        {/* REVIEW DIRECTORY */}
         <div className="admin-review-list-header">
           <h2>ALL SUBMISSIONS</h2>
 
           <button
+            type="button"
             onClick={() => {
               loadReviews();
               loadProjects();
             }}
             disabled={loading || projectsLoading}
           >
-            {loading || projectsLoading ? "LOADING..." : "REFRESH ↻"}
+            {loading || projectsLoading
+              ? "LOADING..."
+              : "REFRESH ↻"}
           </button>
         </div>
 
         {/* FILTERS */}
         <div className="admin-review-filters">
           <div>
-            <label htmlFor="admin-project-filter">PROJECT</label>
+            <label htmlFor="admin-project-filter">
+              PROJECT
+            </label>
 
             <select
               id="admin-project-filter"
               value={projectFilter}
-              onChange={(event) => setProjectFilter(event.target.value)}
+              onChange={(event) =>
+                setProjectFilter(event.target.value)
+              }
             >
               <option value="all">ALL PROJECTS</option>
 
@@ -592,11 +508,15 @@ export default function AdminReviews() {
                 .filter(
                   (review) =>
                     !projects.some(
-                      (project) => project.slug === review.project_slug
+                      (project) =>
+                        project.slug === review.project_slug
                     )
                 )
                 .map((review) => review.project_slug)
-                .filter((slug, index, array) => array.indexOf(slug) === index)
+                .filter(
+                  (slug, index, array) =>
+                    array.indexOf(slug) === index
+                )
                 .map((slug) => (
                   <option key={slug} value={slug}>
                     {getProjectName(slug).toUpperCase()}
@@ -606,12 +526,16 @@ export default function AdminReviews() {
           </div>
 
           <div>
-            <label htmlFor="admin-status-filter">REVIEW STATUS</label>
+            <label htmlFor="admin-status-filter">
+              REVIEW STATUS
+            </label>
 
             <select
               id="admin-status-filter"
               value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value)}
+              onChange={(event) =>
+                setStatusFilter(event.target.value)
+              }
             >
               <option value="all">ALL STATUSES</option>
               <option value="pending">PENDING</option>
@@ -621,8 +545,11 @@ export default function AdminReviews() {
           </div>
         </div>
 
+        {/* REVIEW LIST */}
         {loading ? (
-          <p className="admin-empty">Loading reviews...</p>
+          <p className="admin-empty">
+            Loading reviews...
+          </p>
         ) : filteredReviews.length === 0 ? (
           <p className="admin-empty">
             No reviews match the selected filters.
@@ -630,11 +557,16 @@ export default function AdminReviews() {
         ) : (
           <div className="admin-review-list">
             {filteredReviews.map((item) => (
-              <article className="admin-review-card" key={item.id}>
+              <article
+                className="admin-review-card"
+                key={item.id}
+              >
                 <div className="admin-review-card-top">
                   <div>
                     <h3>{item.reviewer_name}</h3>
-                    <span>{item.reviewer_role || "Client"}</span>
+                    <span>
+                      {item.reviewer_role || "Client"}
+                    </span>
                   </div>
 
                   <span className={`admin-status ${item.status}`}>
@@ -644,9 +576,11 @@ export default function AdminReviews() {
 
                 <div className="admin-review-project">
                   <span>PROJECT</span>
+
                   <strong>
                     {projects.find(
-                      (project) => project.slug === item.project_slug
+                      (project) =>
+                        project.slug === item.project_slug
                     )?.name || getProjectName(item.project_slug)}
                   </strong>
                 </div>
@@ -665,23 +599,32 @@ export default function AdminReviews() {
                 <div className="admin-review-actions">
                   {item.status !== "approved" && (
                     <button
+                      type="button"
                       disabled={busyId === item.id}
-                      onClick={() => updateStatus(item.id, "approved")}
+                      onClick={() =>
+                        updateStatus(item.id, "approved")
+                      }
                     >
-                      {busyId === item.id ? "PLEASE WAIT..." : "APPROVE"}
+                      {busyId === item.id
+                        ? "PLEASE WAIT..."
+                        : "APPROVE"}
                     </button>
                   )}
 
                   {item.status !== "rejected" && (
                     <button
+                      type="button"
                       disabled={busyId === item.id}
-                      onClick={() => updateStatus(item.id, "rejected")}
+                      onClick={() =>
+                        updateStatus(item.id, "rejected")
+                      }
                     >
                       REJECT
                     </button>
                   )}
 
                   <button
+                    type="button"
                     disabled={busyId === item.id}
                     onClick={() => deleteReview(item.id)}
                   >

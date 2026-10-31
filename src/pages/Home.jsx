@@ -1,31 +1,12 @@
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import gsap from "gsap";
-import ScrollTrigger from "gsap/ScrollTrigger";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import LiquidLink from "../components/LiquidLink";
+import { supabase } from "../lib/supabase";
 
 gsap.registerPlugin(ScrollTrigger);
-
-const featuredProjects = [
-  {
-    number: "01",
-    title: "LEVEL UP",
-    category: "FITNESS / APP CONCEPT",
-    description:
-      "Exploring how fitness, progression and gamification can come together in one experience.",
-    visual: "levelup-visual",
-    symbol: "↑",
-  },
-  {
-    number: "02",
-    title: "WEB EXPERIENCES",
-    category: "DEVELOPMENT / EXPERIMENTS",
-    description:
-      "A growing collection of web development experiments, interfaces and ideas.",
-    visual: "web-visual",
-    symbol: "◈",
-  },
-];
 
 const clientWorks = [
   {
@@ -61,6 +42,45 @@ const tools = [
 export default function Home() {
   const pageRef = useRef(null);
 
+  const [featuredProjects, setFeaturedProjects] = useState([]);
+  const [projectsLoading, setProjectsLoading] = useState(true);
+
+  // Load published personal projects from Supabase.
+  useEffect(() => {
+    let active = true;
+
+    const loadFeaturedProjects = async () => {
+      const { data, error } = await supabase
+        .from("personal_projects")
+        .select(
+          "id, title, slug, category, description, status, cover_image_url, featured, sort_order"
+        )
+        .eq("published", true)
+        .order("featured", { ascending: false })
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: false })
+        .limit(2);
+
+      if (!active) return;
+
+      if (error) {
+        console.error("Unable to load homepage projects:", error);
+        setFeaturedProjects([]);
+      } else {
+        setFeaturedProjects(data || []);
+      }
+
+      setProjectsLoading(false);
+    };
+
+    loadFeaturedProjects();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Original homepage animations.
   useEffect(() => {
     const page = pageRef.current;
     if (!page) return;
@@ -187,58 +207,69 @@ export default function Home() {
           },
         });
       });
-
-      // 3D PROJECT CARD INTERACTION
-      const cards = gsap.utils.toArray(".float-card");
-
-      cards.forEach((card) => {
-        const handleMove = (event) => {
-          if (window.matchMedia("(pointer: coarse)").matches) return;
-
-          const rect = card.getBoundingClientRect();
-
-          const x = (event.clientX - rect.left) / rect.width - 0.5;
-          const y = (event.clientY - rect.top) / rect.height - 0.5;
-
-          gsap.to(card, {
-            rotateY: x * 9,
-            rotateX: -y * 8,
-            y: -10,
-            duration: 0.35,
-            ease: "power2.out",
-            transformPerspective: 900,
-          });
-        };
-
-        const handleLeave = () => {
-          gsap.to(card, {
-            rotateX: 0,
-            rotateY: 0,
-            y: 0,
-            duration: 0.65,
-            ease: "elastic.out(1, 0.6)",
-          });
-        };
-
-        card.addEventListener("mousemove", handleMove);
-        card.addEventListener("mouseleave", handleLeave);
-
-        card._cleanup = () => {
-          card.removeEventListener("mousemove", handleMove);
-          card.removeEventListener("mouseleave", handleLeave);
-        };
-      });
     }, page);
 
+    return () => context.revert();
+  }, []);
+
+  // 3D interaction for dynamically loaded project cards.
+  useEffect(() => {
+    const page = pageRef.current;
+    if (!page) return;
+
+    const cards = page.querySelectorAll(".float-card");
+
+    cards.forEach((card) => {
+      const handleMove = (event) => {
+        if (window.matchMedia("(pointer: coarse)").matches) return;
+
+        const rect = card.getBoundingClientRect();
+
+        const x = (event.clientX - rect.left) / rect.width - 0.5;
+        const y = (event.clientY - rect.top) / rect.height - 0.5;
+
+        gsap.to(card, {
+          rotateY: x * 9,
+          rotateX: -y * 8,
+          y: -10,
+          duration: 0.35,
+          ease: "power2.out",
+          transformPerspective: 900,
+        });
+      };
+
+      const handleLeave = () => {
+        gsap.to(card, {
+          rotateX: 0,
+          rotateY: 0,
+          y: 0,
+          duration: 0.65,
+          ease: "elastic.out(1, 0.6)",
+        });
+      };
+
+      card.addEventListener("mousemove", handleMove);
+      card.addEventListener("mouseleave", handleLeave);
+
+      card._cleanup = () => {
+        card.removeEventListener("mousemove", handleMove);
+        card.removeEventListener("mouseleave", handleLeave);
+      };
+    });
+
+    const refreshTimer = window.setTimeout(() => {
+      ScrollTrigger.refresh();
+    }, 200);
+
     return () => {
-      page.querySelectorAll(".float-card").forEach((card) => {
+      window.clearTimeout(refreshTimer);
+
+      cards.forEach((card) => {
         card._cleanup?.();
         delete card._cleanup;
       });
-
-      context.revert();
     };
-  }, []);
+  }, [featuredProjects, projectsLoading]);
 
   return (
     <main ref={pageRef}>
@@ -390,7 +421,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* PERSONAL PROJECTS */}
+      {/* PERSONAL PROJECTS — LIVE FROM SUPABASE */}
       <section className="section home-work">
         <div className="section-top reveal">
           <span>02 / PERSONAL PROJECTS</span>
@@ -410,47 +441,76 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="featured-grid">
-          {featuredProjects.map((project) => (
-            <article
-              className={`float-card ${project.visual}`}
-              key={project.number}
-            >
-              <div className="float-card-art">
-                <span className="card-number">
-                  {project.number} / FEATURED
-                </span>
+        {projectsLoading ? (
+          <p className="home-project-loading">
+            LOADING PROJECTS...
+          </p>
+        ) : featuredProjects.length > 0 ? (
+          <div className="featured-grid">
+            {featuredProjects.map((project, index) => (
+              <Link
+                to={`/projects/${project.slug}`}
+                className={`float-card home-dynamic-project-card ${
+                  index % 2 === 0 ? "levelup-visual" : "web-visual"
+                }`}
+                key={project.id}
+                aria-label={`View ${project.title} project`}
+              >
+                <div className="float-card-art">
+                  {project.cover_image_url && (
+                    <img
+                      className="home-project-cover"
+                      src={project.cover_image_url}
+                      alt={`${project.title} cover`}
+                      loading="lazy"
+                    />
+                  )}
 
-                <div className="card-art-type">
-                  {project.title}
-                  <small>{project.category}</small>
-                </div>
+                  <div className="home-project-shade" />
 
-                <span className="card-art-footer">
-                  EXPERIMENT / ADI
-                </span>
-
-                <span className="project-art-symbol">
-                  {project.symbol}
-                </span>
-              </div>
-
-              <div className="float-card-info">
-                <div>
-                  <span className="eyebrow">
-                    {project.category}
+                  <span className="card-number">
+                    {String(index + 1).padStart(2, "0")} / FEATURED
                   </span>
 
-                  <h3>{project.title}</h3>
+                  <div className="card-art-type">
+                    {project.title}
+                    <small>{project.category}</small>
+                  </div>
 
-                  <p>{project.description}</p>
+                  <span className="card-art-footer">
+                    PERSONAL PROJECT / ADI
+                  </span>
+
+                  <span className="project-art-symbol">
+                    {index % 2 === 0 ? "↗" : "◈"}
+                  </span>
+
+                  <span className="home-project-status">
+                    {project.status}
+                  </span>
                 </div>
 
-                <span className="card-arrow">↗</span>
-              </div>
-            </article>
-          ))}
-        </div>
+                <div className="float-card-info">
+                  <div>
+                    <span className="eyebrow">
+                      {project.category}
+                    </span>
+
+                    <h3>{project.title}</h3>
+
+                    <p>{project.description}</p>
+                  </div>
+
+                  <span className="card-arrow">↗</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <p className="home-project-loading">
+            NEW PROJECTS ARE TAKING SHAPE. CHECK BACK SOON.
+          </p>
+        )}
 
         <div className="center-action reveal">
           <LiquidLink to="/projects">
@@ -482,13 +542,11 @@ export default function Home() {
 
         <div className="featured-grid">
           {clientWorks.map((project) => (
-            <a
-              href="https://bonejam.com"
-              target="_blank"
-              rel="noreferrer"
+            <Link
+              to="/client-work/bone-jam"
               className={`float-card ${project.visual}`}
               key={project.number}
-              aria-label="Visit Bone Jam website — opens in a new tab"
+              aria-label="View Bone Jam case study"
             >
               <div className="float-card-art">
                 <span className="card-number">
@@ -524,7 +582,7 @@ export default function Home() {
                   ↗
                 </span>
               </div>
-            </a>
+            </Link>
           ))}
         </div>
 

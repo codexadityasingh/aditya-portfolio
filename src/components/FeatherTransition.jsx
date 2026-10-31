@@ -21,9 +21,9 @@ export default function FeatherTransition() {
     const feather = overlay.querySelector(".falling-feather");
     const bubble = overlay.querySelector(".feather-orb");
     const waves = overlay.querySelectorAll(".bubble-wave");
-    const burstWash = overlay.querySelector(".bubble-burst-wash");
+    const wash = overlay.querySelector(".bubble-burst-wash");
 
-    if (!feather || !bubble || !waves.length || !burstWash) return;
+    if (!feather || !bubble || waves.length !== 3 || !wash) return;
 
     const reduceMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
@@ -35,20 +35,27 @@ export default function FeatherTransition() {
     }
 
     const context = gsap.context(() => {
-      const viewportHeight = () => window.innerHeight;
+      const mobile = window.matchMedia("(max-width: 700px)").matches;
+      const height = window.innerHeight;
+
+      const featherStart = mobile
+        ? -height * 0.30
+        : -height * 0.38;
 
       gsap.set(overlay, { autoAlpha: 1 });
 
+      // Initial feather position
       gsap.set(feather, {
         x: 0,
-        y: () => -viewportHeight() * 0.38,
-        rotation: -35,
-        scale: 1,
+        y: featherStart,
+        rotation: -24,
+        scale: 0.9,
         opacity: 0,
         transformOrigin: "50% 50%",
         force3D: true,
       });
 
+      // Initial bubble position
       gsap.set(bubble, {
         x: 0,
         y: 0,
@@ -61,15 +68,16 @@ export default function FeatherTransition() {
         force3D: true,
       });
 
+      // Initial shockwave positions
       gsap.set(waves, {
-        scale: 0.02,
+        scale: 0.05,
         opacity: 0,
         transformOrigin: "center",
         force3D: true,
       });
 
-      gsap.set(burstWash, {
-        scale: 0.02,
+      gsap.set(wash, {
+        scale: 0.05,
         opacity: 0,
         transformOrigin: "center",
         force3D: true,
@@ -77,129 +85,254 @@ export default function FeatherTransition() {
 
       const animation = gsap.timeline({ paused: true });
 
-      // 1. Feather enters the scene.
+      /*
+       * 1. FEATHER FALL
+       */
+
       animation.to(feather, {
-        y: -15,
-        x: 35,
-        rotation: -8,
         opacity: 1,
-        duration: 1.1,
+        duration: 0.35,
         ease: "power1.out",
       });
 
-      // 2. Feather gently drifts.
       animation.to(feather, {
-        y: 100,
-        x: -15,
-        rotation: 28,
-        duration: 1.3,
-        ease: "sine.inOut",
+        keyframes: [
+          {
+            x: mobile ? 8 : 22,
+            y: featherStart * 0.55,
+            rotation: -13,
+            scale: 0.96,
+            duration: 0.9,
+          },
+          {
+            x: mobile ? -7 : -18,
+            y: featherStart * 0.16,
+            rotation: 5,
+            scale: 1,
+            duration: 0.9,
+          },
+          {
+            x: mobile ? 9 : 25,
+            y: height * 0.04,
+            rotation: -9,
+            scale: 0.98,
+            duration: 0.85,
+          },
+          {
+            x: mobile ? 0 : -8,
+            y: height * 0.12,
+            rotation: 3,
+            scale: 0.92,
+            duration: 0.65,
+          },
+        ],
+        ease: "none",
       });
 
-      // 3. Feather contracts and disappears.
+      // Feather disappears
       animation.to(feather, {
-        scale: 0.04,
-        rotation: 100,
+        scale: 0.08,
+        rotation: 28,
         opacity: 0,
         duration: 0.35,
         ease: "power2.in",
       });
 
-      // 4. Bubble forms.
+      /*
+       * 2. BUBBLE FORMATION
+       */
+
       animation.fromTo(
         bubble,
-        { scale: 0.05, opacity: 0 },
+        {
+          scale: 0.72,
+          scaleX: 0.82,
+          scaleY: 1.12,
+          rotation: -12,
+          opacity: 0,
+        },
         {
           scale: 1,
+          scaleX: 1,
+          scaleY: 1,
+          rotation: 0,
           opacity: 1,
-          duration: 0.8,
-          ease: "power2.out",
+          duration: 1.05,
+          ease: "power3.out",
         },
-        "-=0.12"
+        "-=0.08"
       );
 
-      // 5. Bubble floats.
+      /*
+       * 3. NATURAL FLOATING
+       */
+
       animation.to(bubble, {
-        x: 10,
-        y: -8,
-        rotation: 4,
-        duration: 0.65,
+        keyframes: [
+          {
+            x: 3,
+            y: -5,
+            rotation: 1.5,
+            scaleX: 1.015,
+            scaleY: 0.99,
+            duration: 0.75,
+          },
+          {
+            x: -3,
+            y: -9,
+            rotation: -1,
+            scaleX: 0.99,
+            scaleY: 1.015,
+            duration: 0.9,
+          },
+          {
+            x: 0,
+            y: -4,
+            rotation: 0,
+            scaleX: 1,
+            scaleY: 1,
+            duration: 0.75,
+          },
+        ],
         ease: "sine.inOut",
       });
 
+      /*
+       * 4. BUILD BURST TENSION
+       */
+
       animation.to(bubble, {
-        x: -7,
-        y: 5,
-        rotation: -3,
-        duration: 0.65,
-        ease: "sine.inOut",
+        scaleX: 0.91,
+        scaleY: 1.08,
+        rotation: -2,
+        duration: 0.16,
+        ease: "power3.in",
       });
 
-      // 6. Bubble stretches.
+      /*
+       * 5. THE POP
+       *
+       * Bubble snaps outward and disappears.
+       */
+
       animation.to(bubble, {
-        scaleX: 1.14,
-        scaleY: 0.88,
-        duration: 0.18,
-        ease: "power2.in",
+        scaleX: 1.65,
+        scaleY: 1.65,
+        rotation: 0,
+        opacity: 0,
+        duration: 0.13,
+        ease: "expo.out",
       });
 
-      // 7. Bubble bursts and waves expand.
-      animation.to(
-        bubble,
+      /*
+       * 6. FIRST SHOCKWAVE
+       *
+       * Bright, fast inner ring.
+       */
+
+      animation.fromTo(
+        waves[0],
         {
-          scale: 1.4,
+          scale: 0.12,
           opacity: 0,
-          duration: 0.16,
-          ease: "power2.out",
+        },
+        {
+          scale: mobile ? 2.2 : 2.7,
+          opacity: 0.42,
+          duration: 0.62,
+          ease: "expo.out",
         },
         "<"
       );
+
+      /*
+       * 7. SECOND SHOCKWAVE
+       */
+
+      animation.fromTo(
+        waves[1],
+        {
+          scale: 0.12,
+          opacity: 0,
+        },
+        {
+          scale: mobile ? 2.35 : 2.85,
+          opacity: 0.24,
+          duration: 0.85,
+          ease: "power3.out",
+        },
+        "<0.10"
+      );
+
+      /*
+       * 8. THIRD OUTER RIPPLE
+       */
+
+      animation.fromTo(
+        waves[2],
+        {
+          scale: 0.12,
+          opacity: 0,
+        },
+        {
+          scale: mobile ? 2.5 : 3,
+          opacity: 0.13,
+          duration: 1.1,
+          ease: "power2.out",
+        },
+        "<0.12"
+      );
+
+      /*
+       * 9. BURST FLASH
+       */
+
+      animation.fromTo(
+        wash,
+        {
+          scale: 0.1,
+          opacity: 0,
+        },
+        {
+          scale: 0.75,
+          opacity: mobile ? 0.24 : 0.3,
+          duration: 0.09,
+          ease: "power4.out",
+        },
+        "<"
+      );
+
+      // Flash expands and dissolves
+      animation.to(
+        wash,
+        {
+          scale: mobile ? 2.1 : 2.5,
+          opacity: 0,
+          duration: 0.72,
+          ease: "expo.out",
+        },
+        "<0.08"
+      );
+
+      /*
+       * 10. SHOCKWAVES DISSOLVE
+       */
 
       animation.to(
         waves,
         {
-          scale: 2.5,
-          opacity: (index) => [0.34, 0.23, 0.13][index],
-          duration: 1.35,
-          stagger: 0.12,
-          ease: "power2.out",
-        },
-        "<"
-      );
-
-      animation.to(
-        burstWash,
-        {
-          scale: 2.3,
-          opacity: 0.2,
-          duration: 1.35,
-          ease: "power2.out",
-        },
-        "<"
-      );
-
-      // 8. Waves fade away.
-      animation.to(
-        waves,
-        {
           opacity: 0,
-          duration: 0.75,
-          ease: "power1.out",
+          duration: 0.65,
+          ease: "sine.out",
+          stagger: 0.08,
         },
-        "-=0.35"
+        "-=0.25"
       );
 
-      animation.to(
-        burstWash,
-        {
-          opacity: 0,
-          duration: 0.75,
-          ease: "power1.out",
-        },
-        "<"
-      );
+      /*
+       * 11. REVEAL THE NEXT SECTION
+       */
 
-      // 9. Reveal the page.
       animation.to(
         overlay,
         {
@@ -207,16 +340,24 @@ export default function FeatherTransition() {
           duration: 0.35,
           ease: "power1.out",
         },
-        "-=0.3"
+        "-=0.2"
       );
+
+      /*
+       * SCROLL CONTROL
+       */
 
       ScrollTrigger.create({
         trigger: hero,
         start: "top top",
-        end: () => `+=${Math.max(window.innerHeight * 2.5, 1800)}`,
+        end: () =>
+          `+=${Math.max(
+            window.innerHeight * (mobile ? 1.8 : 2.5),
+            mobile ? 1100 : 1800
+          )}`,
         pin: hero,
         pinSpacing: true,
-        scrub: 0.8,
+        scrub: mobile ? 0.5 : 0.8,
         animation,
         anticipatePin: 1,
         invalidateOnRefresh: true,
@@ -250,19 +391,20 @@ export default function FeatherTransition() {
         contain: "layout paint",
       }}
     >
-      {/* Falling feather */}
+      {/* FEATHER */}
       <svg
         className="falling-feather"
         viewBox="0 0 120 220"
-        style={{
-          position: "absolute",
-          width: 95,
-          height: 145,
-          zIndex: 5,
-          filter: "drop-shadow(0 5px 12px rgba(255,255,255,.25))",
-        }}
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
+        style={{
+          position: "absolute",
+          width: "clamp(60px, 7vw, 95px)",
+          height: "auto",
+          zIndex: 5,
+          filter: "drop-shadow(0 5px 12px rgba(255,255,255,.2))",
+          willChange: "transform, opacity",
+        }}
       >
         <path
           d="M60 208C58 166 62 125 65 84C68 43 85 13 107 10C116 9 119 17 113 29C103 50 85 68 65 84"
@@ -270,26 +412,31 @@ export default function FeatherTransition() {
           strokeWidth="2"
           strokeLinecap="round"
         />
+
         <path
           d="M65 84C48 67 27 53 13 35C4 24 8 13 18 13C36 13 54 43 65 84Z"
           fill="url(#featherGradient)"
           fillOpacity=".8"
         />
+
         <path
           d="M65 84C83 62 96 37 113 29C119 26 120 18 113 15C99 9 77 42 65 84Z"
           fill="url(#featherGradient)"
           fillOpacity=".6"
         />
+
         <path
           d="M60 208C61 159 63 117 65 84"
           stroke="white"
           strokeWidth="1.5"
         />
+
         <path
           d="M65 84L28 43M65 84L43 28M65 84L86 49M65 84L102 35"
           stroke="rgba(255,255,255,.65)"
           strokeWidth="1"
         />
+
         <defs>
           <linearGradient
             id="featherGradient"
@@ -304,13 +451,13 @@ export default function FeatherTransition() {
         </defs>
       </svg>
 
-      {/* Transparent glass bubble */}
+      {/* GLASS BUBBLE */}
       <div
         className="feather-orb"
         style={{
           position: "absolute",
-          width: 145,
-          height: 145,
+          width: "clamp(110px, 12vw, 145px)",
+          aspectRatio: "1",
           borderRadius: "50%",
           zIndex: 4,
           border: "1px solid rgba(255,255,255,.48)",
@@ -328,9 +475,10 @@ export default function FeatherTransition() {
           `,
           boxShadow: `
             inset 0 0 18px rgba(255,255,255,.13),
-            inset 0 0 45px rgba(255,255,255,.035),
-            0 0 18px rgba(255,255,255,.07)
+            inset 0 0 35px rgba(255,255,255,.035),
+            0 0 15px rgba(255,255,255,.06)
           `,
+          willChange: "transform, opacity",
         }}
       >
         <div
@@ -350,14 +498,14 @@ export default function FeatherTransition() {
             width: "26%",
             height: "9%",
             borderRadius: "50%",
-            background: "rgba(255,255,255,.6)",
-            filter: "blur(4px)",
+            background: "rgba(255,255,255,.55)",
+            filter: "blur(3px)",
             transform: "rotate(-30deg)",
           }}
         />
       </div>
 
-      {/* Expanding glass rings */}
+      {/* SHOCKWAVE RINGS */}
       {[0, 1, 2].map((index) => (
         <div
           className="bubble-wave"
@@ -371,10 +519,10 @@ export default function FeatherTransition() {
             background: `
               radial-gradient(
                 circle,
-                transparent 48.5%,
-                rgba(255,255,255,.36) 49.2%,
-                rgba(255,255,255,.16) 50%,
-                rgba(255,255,255,.055) 51.5%,
+                transparent 47%,
+                rgba(255,255,255,.65) 48.5%,
+                rgba(255,255,255,.32) 49.5%,
+                rgba(255,255,255,.08) 51%,
                 transparent 54%
               )
             `,
@@ -383,7 +531,7 @@ export default function FeatherTransition() {
         />
       ))}
 
-      {/* Broad transparent burst */}
+      {/* BURST FLASH */}
       <div
         className="bubble-burst-wash"
         style={{
@@ -395,11 +543,10 @@ export default function FeatherTransition() {
           background: `
             radial-gradient(
               circle,
-              transparent 35%,
-              rgba(255,255,255,.045) 49%,
-              rgba(255,255,255,.10) 50%,
-              rgba(255,255,255,.035) 56%,
-              transparent 70%
+              rgba(255,255,255,.12) 0%,
+              rgba(255,255,255,.08) 15%,
+              rgba(255,255,255,.035) 35%,
+              transparent 65%
             )
           `,
           willChange: "transform, opacity",

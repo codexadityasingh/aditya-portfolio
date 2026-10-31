@@ -1,134 +1,153 @@
-
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { supabase } from "../lib/supabase";
 import LiquidLink from "../components/LiquidLink";
+import usePageMotion from "../hooks/usePageMotion";
 
-gsap.registerPlugin(ScrollTrigger);
+const boneJamFallback = {
+  id: "bone-jam-fallback",
+  slug: "bone-jam",
+  number: "001",
+  title: "BONE JAM",
+  category: "WEB DEVELOPMENT",
+  project_type: "CREATIVE COLLABORATION",
+  description:
+    "A collaborative website project for a Minecraft-inspired creative platform.",
+  cover_image_url: "/images/bonejam/home.png",
+  image_alt: "Bone Jam website cover",
+  status: "LIVE",
+  featured: true,
+  sort_order: 0,
+};
 
-const projects = [
-  {
-    number: "001",
-    name: "BONE JAM",
-    category: "WEB DEVELOPMENT",
-    type: "CREATIVE COLLABORATION",
+function formatProject(project, index) {
+  return {
+    ...project,
+    number: String(index + 1).padStart(3, "0"),
+    name: project.title || project.project_name || "UNTITLED PROJECT",
+    category: project.category || "CREATIVE DEVELOPMENT",
+    type:
+      project.project_type ||
+      project.project_type_label ||
+      "CLIENT COLLABORATION",
     description:
-      "A collaborative website project for a Minecraft-inspired creative platform.",
-    image: "/images/bonejam/home.png",
-    imageAlt: "Bone Jam website cover",
-    route: "/client-work/bone-jam",
-    status: "LIVE",
-  },
-];
+      project.description || "A creative project brought to life.",
+    image: project.cover_image_url || "/images/bonejam/home.png",
+    imageAlt:
+      project.image_alt || project.title || "Client project cover",
+    route: `/client-work/${project.slug}`,
+    status: project.status || "LIVE",
+  };
+}
 
 export default function ClientWork() {
   const pageRef = useRef(null);
 
-  useEffect(() => {
-    const page = pageRef.current;
-    if (!page) return;
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
-    const context = gsap.context(() => {
-      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        return;
+  // Shared motion system. Re-runs when Supabase projects load.
+  const motionKey = loading ? "loading" : `loaded-${projects.length}`;
+
+  usePageMotion(pageRef, motionKey);
+
+  // FETCH PUBLISHED PROJECTS
+  useEffect(() => {
+    let isMounted = true;
+
+    async function fetchProjects() {
+      setLoading(true);
+      setLoadError(false);
+
+      const { data, error } = await supabase
+        .from("client_work_projects")
+        .select("*")
+        .eq("published", true)
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: false });
+
+      if (!isMounted) return;
+
+      if (error) {
+        console.error("Could not load client work:", error);
+        setLoadError(true);
       }
 
-      gsap.from(".archive-reveal", {
-        y: 28,
-        opacity: 0,
-        duration: 0.8,
-        stagger: 0.1,
-        ease: "power3.out",
-        scrollTrigger: {
-          trigger: page,
-          start: "top 80%",
-        },
-      });
+      const databaseProjects = data || [];
 
-      gsap.from(".archive-project-card", {
-        y: 45,
-        opacity: 0,
-        duration: 0.9,
-        stagger: 0.16,
-        ease: "power3.out",
-        scrollTrigger: {
-          trigger: ".archive-project-grid",
-          start: "top 88%",
-        },
-      });
+      // Use the database version of Bone Jam if it exists.
+      // Otherwise preserve the original Bone Jam gallery entry.
+      const databaseBoneJam = databaseProjects.find(
+        (project) => project.slug === "bone-jam"
+      );
 
-      page.querySelectorAll(".archive-project-card").forEach((card) => {
-        const handleMove = (event) => {
-          if (window.matchMedia("(pointer: coarse)").matches) return;
+      const boneJam = databaseBoneJam || boneJamFallback;
 
-          const rect = card.getBoundingClientRect();
-          const x = (event.clientX - rect.left) / rect.width - 0.5;
-          const y = (event.clientY - rect.top) / rect.height - 0.5;
+      const otherProjects = databaseProjects.filter(
+        (project) => project.slug !== "bone-jam"
+      );
 
-          gsap.to(card, {
-            rotateY: x * 4,
-            rotateX: -y * 4,
-            y: -7,
-            duration: 0.35,
-            ease: "power2.out",
-            transformPerspective: 1000,
-          });
-        };
+      const combinedProjects = [boneJam, ...otherProjects]
+        .sort((a, b) => {
+          if (a.slug === "bone-jam") return -1;
+          if (b.slug === "bone-jam") return 1;
 
-        const handleLeave = () => {
-          gsap.to(card, {
-            rotateX: 0,
-            rotateY: 0,
-            y: 0,
-            duration: 0.55,
-            ease: "power3.out",
-          });
-        };
+          if (a.featured !== b.featured) {
+            return a.featured ? -1 : 1;
+          }
 
-        card.addEventListener("mousemove", handleMove);
-        card.addEventListener("mouseleave", handleLeave);
+          return (a.sort_order || 0) - (b.sort_order || 0);
+        })
+        .map(formatProject);
 
-        card._cleanup = () => {
-          card.removeEventListener("mousemove", handleMove);
-          card.removeEventListener("mouseleave", handleLeave);
-        };
-      });
-    }, page);
+      setProjects(combinedProjects);
+      setLoading(false);
+    }
+
+    fetchProjects();
 
     return () => {
-      page.querySelectorAll(".archive-project-card").forEach((card) => {
-        card._cleanup?.();
-        delete card._cleanup;
-      });
-
-      context.revert();
+      isMounted = false;
     };
   }, []);
 
+  // Refresh scroll positions after content and images load.
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      ScrollTrigger.refresh();
+    }, 200);
+
+    return () => window.clearTimeout(timer);
+  }, [projects, loading]);
+
   return (
-    <main className="inner-page client-work-page archive-page" ref={pageRef}>
+    <main
+      className="inner-page client-work-page archive-page"
+      ref={pageRef}
+    >
       {/* HERO */}
       <section className="page-hero client-work-hero archive-hero">
         <div className="archive-hero-orbit archive-orbit-one" />
         <div className="archive-hero-orbit archive-orbit-two" />
 
-        <p className="eyebrow archive-reveal">
+        <p className="eyebrow motion-reveal">
           03 / SELECTED COLLABORATIONS
         </p>
 
-        <h1 className="page-title archive-reveal">
+        <h1 className="page-title motion-reveal">
           WORK
           <br />
           <em>TOGETHER.</em>
         </h1>
 
-        <p className="page-lead archive-reveal">
+        <p className="page-lead motion-reveal">
           A collection of ideas, collaborations and digital
           experiences brought to life through creative development.
         </p>
 
-        <div className="client-hero-meta archive-reveal">
+        <div className="client-hero-meta motion-reveal">
           <span>SELECTED CLIENT PROJECTS</span>
           <span>INDEPENDENT CREATIVE DEVELOPMENT</span>
         </div>
@@ -136,14 +155,15 @@ export default function ClientWork() {
 
       {/* PROJECT ARCHIVE */}
       <section className="section archive-section">
-        <div className="section-top archive-reveal">
+        <div className="section-top motion-reveal">
           <span>01 / THE ARCHIVE</span>
           <span>SELECTED WORKS</span>
         </div>
 
-        <div className="archive-heading archive-reveal">
+        <div className="archive-heading motion-reveal">
           <div>
             <p className="eyebrow">COLLABORATIONS</p>
+
             <h2 className="display-heading">
               MADE
               <br />
@@ -158,75 +178,90 @@ export default function ClientWork() {
         </div>
 
         <div className="archive-project-grid">
-          {projects.map((project) => (
-            <Link
-              to={project.route}
-              className="archive-project-card"
-              key={project.number}
-            >
-              <div className="archive-card-book">
-                <div className="archive-book-page archive-book-page-back" />
-                <div className="archive-book-page archive-book-page-middle" />
+          {loading ? (
+            <p className="motion-reveal">
+              LOADING SELECTED WORKS...
+            </p>
+          ) : (
+            projects.map((project) => (
+              <Link
+                to={project.route}
+                className="archive-project-card motion-reveal motion-tilt"
+                key={project.slug}
+              >
+                <div className="archive-card-book">
+                  <div className="archive-book-page archive-book-page-back" />
+                  <div className="archive-book-page archive-book-page-middle" />
 
-                <div className="archive-card-visual">
-                  <img
-                    src={project.image}
-                    alt={project.imageAlt}
-                    loading="lazy"
-                  />
+                  <div className="archive-card-visual">
+                    <img
+                      src={project.image}
+                      alt={project.imageAlt}
+                      loading="lazy"
+                    />
 
-                  <div className="archive-card-overlay" />
+                    <div className="archive-card-overlay" />
 
-                  <span className="archive-card-number">
-                    PROJECT / {project.number}
-                  </span>
+                    <span className="archive-card-number">
+                      PROJECT / {project.number}
+                    </span>
 
-                  <span className="archive-card-status">
-                    <i />
-                    {project.status}
-                  </span>
+                    <span className="archive-card-status">
+                      <i />
+                      {project.status}
+                    </span>
 
-                  <div className="archive-card-brand">
-                    <span>FEATURED COLLABORATION</span>
+                    <div className="archive-card-brand">
+                      <span>FEATURED COLLABORATION</span>
+                      <h3>{project.name}</h3>
+                    </div>
+
+                    <span className="archive-card-open">↗</span>
+                  </div>
+                </div>
+
+                <div className="archive-card-details">
+                  <div className="archive-card-title">
+                    <span>{project.category}</span>
                     <h3>{project.name}</h3>
+                    <p>{project.description}</p>
                   </div>
 
-                  <span className="archive-card-open">↗</span>
+                  <div className="archive-card-meta">
+                    <span>{project.type}</span>
+                    <span>EXPLORE ↗</span>
+                  </div>
                 </div>
-              </div>
-
-              <div className="archive-card-details">
-                <div className="archive-card-title">
-                  <span>{project.category}</span>
-                  <h3>{project.name}</h3>
-                  <p>{project.description}</p>
-                </div>
-
-                <div className="archive-card-meta">
-                  <span>{project.type}</span>
-                  <span>EXPLORE ↗</span>
-                </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            ))
+          )}
         </div>
 
-        <div className="archive-counter archive-reveal">
+        {loadError && (
+          <p className="motion-reveal">
+            Some projects couldn't be loaded. Showing the existing archive
+            where available.
+          </p>
+        )}
+
+        <div className="archive-counter motion-reveal">
           <span>SELECTED CLIENT PROJECTS</span>
+
           <span>
-            {String(projects.length).padStart(2, "0")} / 01
+            {String(projects.length).padStart(2, "0")} /{" "}
+            {String(projects.length).padStart(2, "0")}
           </span>
         </div>
       </section>
 
       {/* CLOSING */}
       <section className="section archive-ending">
-        <div className="section-top archive-reveal">
+        <div className="section-top motion-reveal">
           <span>02 / THE NEXT COLLABORATION</span>
           <span>OPEN TO IDEAS</span>
         </div>
 
-        <div className="archive-ending-content archive-reveal">
+        <div className="archive-ending-content motion-reveal">
           <p className="eyebrow">HAVE SOMETHING IN MIND?</p>
 
           <h2 className="display-heading">

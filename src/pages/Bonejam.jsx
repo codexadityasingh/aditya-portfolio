@@ -1,11 +1,8 @@
-
 import { useEffect, useRef, useState } from "react";
-import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import LiquidLink from "../components/LiquidLink";
 import { supabase } from "../lib/supabase";
-
-gsap.registerPlugin(ScrollTrigger);
+import usePageMotion from "../hooks/usePageMotion";
 
 const contributions = [
   {
@@ -37,8 +34,6 @@ const process = [
   ["06", "DELIVERY", "Bringing the website together."],
 ];
 
-// Add your actual screenshots to public/images/bonejam/
-// using these filenames.
 const gallery = [
   {
     number: "01",
@@ -73,9 +68,19 @@ const gallery = [
 
 export default function ClientWork() {
   const pageRef = useRef(null);
+
   const [reviews, setReviews] = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
 
+  // Shared animation system.
+  // Re-run when asynchronous reviews arrive.
+  const motionKey = reviewsLoading
+    ? "reviews-loading"
+    : `reviews-loaded-${reviews.length}`;
+
+  usePageMotion(pageRef, motionKey);
+
+  // LOAD APPROVED CLIENT REVIEWS
   useEffect(() => {
     let isMounted = true;
 
@@ -108,104 +113,37 @@ export default function ClientWork() {
     };
   }, []);
 
+  // Refresh scroll positions when review content changes.
   useEffect(() => {
-    const page = pageRef.current;
-    if (!page) return;
+    const timer = window.setTimeout(() => {
+      ScrollTrigger.refresh();
+    }, 200);
 
-    const context = gsap.context(() => {
-      const reduceMotion = window.matchMedia(
-        "(prefers-reduced-motion: reduce)"
-      ).matches;
-
-      if (reduceMotion) return;
-
-      gsap.utils.toArray(".client-reveal").forEach((element) => {
-        gsap.from(element, {
-          y: 40,
-          opacity: 0,
-          duration: 0.85,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: element,
-            start: "top 88%",
-            toggleActions: "play none none reverse",
-          },
-        });
-      });
-
-      gsap
-        .utils.toArray(".client-process-card, .client-gallery-card")
-        .forEach((card) => {
-          const handleMove = (event) => {
-            if (window.matchMedia("(pointer: coarse)").matches) return;
-
-            const rect = card.getBoundingClientRect();
-            const x = (event.clientX - rect.left) / rect.width - 0.5;
-            const y = (event.clientY - rect.top) / rect.height - 0.5;
-
-            gsap.to(card, {
-              rotateY: x * 4,
-              rotateX: -y * 4,
-              y: -5,
-              duration: 0.3,
-              ease: "power2.out",
-              transformPerspective: 900,
-            });
-          };
-
-          const handleLeave = () => {
-            gsap.to(card, {
-              rotateX: 0,
-              rotateY: 0,
-              y: 0,
-              duration: 0.55,
-              ease: "power2.out",
-            });
-          };
-
-          card.addEventListener("mousemove", handleMove);
-          card.addEventListener("mouseleave", handleLeave);
-
-          card._cleanup = () => {
-            card.removeEventListener("mousemove", handleMove);
-            card.removeEventListener("mouseleave", handleLeave);
-          };
-        });
-    }, page);
-
-    return () => {
-      page
-        .querySelectorAll(".client-process-card, .client-gallery-card")
-        .forEach((card) => {
-          card._cleanup?.();
-          delete card._cleanup;
-        });
-
-      context.revert();
-    };
-  }, []);
+    return () => window.clearTimeout(timer);
+  }, [reviews, reviewsLoading]);
 
   return (
     <main className="inner-page client-work-page" ref={pageRef}>
+
       {/* HERO */}
       <section className="page-hero client-work-hero">
-        <p className="eyebrow client-reveal">
+        <p className="eyebrow motion-reveal">
           03 / COLLABORATIONS & CLIENT WORK
         </p>
 
-        <h1 className="page-title client-reveal">
+        <h1 className="page-title motion-reveal">
           BUILT
           <br />
           <em>TOGETHER.</em>
         </h1>
 
-        <p className="page-lead client-reveal">
+        <p className="page-lead motion-reveal">
           A collection of collaborations where ideas become
           digital experiences. Different perspectives,
           shared effort and a little help from technology.
         </p>
 
-        <div className="client-hero-meta client-reveal">
+        <div className="client-hero-meta motion-reveal">
           <span>01 / FEATURED COLLABORATION</span>
           <span>WEB DEVELOPMENT</span>
         </div>
@@ -213,12 +151,12 @@ export default function ClientWork() {
 
       {/* FEATURED PROJECT */}
       <section className="section client-feature">
-        <div className="section-top client-reveal">
+        <div className="section-top motion-reveal">
           <span>01 / FEATURED PROJECT</span>
           <span>BONE JAM</span>
         </div>
 
-        <div className="client-feature-art client-reveal">
+        <div className="client-feature-art motion-reveal motion-tilt">
           <div className="client-feature-glow" />
 
           <div className="client-feature-content">
@@ -250,7 +188,7 @@ export default function ClientWork() {
           </div>
         </div>
 
-        <div className="client-project-meta client-reveal">
+        <div className="client-project-meta motion-reveal">
           <div>
             <span>PROJECT</span>
             <p>Bone Jam — Custom Minecraft Creations</p>
@@ -275,12 +213,12 @@ export default function ClientWork() {
 
       {/* SCREENSHOT GALLERY */}
       <section className="section client-gallery">
-        <div className="section-top client-reveal">
+        <div className="section-top motion-reveal">
           <span>02 / PROJECT GALLERY</span>
           <span>SELECTED SCREENS / BONE JAM</span>
         </div>
 
-        <div className="client-gallery-heading client-reveal">
+        <div className="client-gallery-heading motion-reveal">
           <h2 className="display-heading">
             A CLOSER
             <br />
@@ -296,7 +234,7 @@ export default function ClientWork() {
         <div className="client-gallery-grid">
           {gallery.map((item) => (
             <article
-              className={`client-gallery-card ${
+              className={`client-gallery-card motion-reveal motion-tilt ${
                 item.wide ? "client-gallery-card-wide" : ""
               }`}
               key={item.number}
@@ -326,7 +264,7 @@ export default function ClientWork() {
           ))}
         </div>
 
-        <div className="client-gallery-outro client-reveal">
+        <div className="client-gallery-outro motion-reveal">
           <span>THE COMPLETE EXPERIENCE</span>
 
           <a
@@ -342,19 +280,19 @@ export default function ClientWork() {
 
       {/* OVERVIEW */}
       <section className="section client-overview">
-        <div className="section-top client-reveal">
+        <div className="section-top motion-reveal">
           <span>03 / THE COLLABORATION</span>
           <span>IDEA TO IMPLEMENTATION</span>
         </div>
 
         <div className="client-overview-grid">
-          <h2 className="display-heading client-reveal">
+          <h2 className="display-heading motion-reveal">
             ONE IDEA.
             <br />
             <em>SHARED EFFORT.</em>
           </h2>
 
-          <div className="client-overview-copy client-reveal">
+          <div className="client-overview-copy motion-reveal">
             <p className="eyebrow">ABOUT THE PROJECT</p>
 
             <p>
@@ -385,12 +323,12 @@ export default function ClientWork() {
 
       {/* CONTRIBUTION */}
       <section className="section client-contribution">
-        <div className="section-top client-reveal">
+        <div className="section-top motion-reveal">
           <span>04 / MY CONTRIBUTION</span>
           <span>WHAT I WORKED ON</span>
         </div>
 
-        <div className="client-contribution-heading client-reveal">
+        <div className="client-contribution-heading motion-reveal">
           <h2 className="display-heading">
             LEARNING BY
             <br />
@@ -407,7 +345,7 @@ export default function ClientWork() {
         <div className="client-contribution-list">
           {contributions.map((item) => (
             <article
-              className="client-contribution-row client-reveal"
+              className="client-contribution-row motion-reveal motion-tilt"
               key={item.number}
             >
               <span>{item.number}</span>
@@ -421,12 +359,12 @@ export default function ClientWork() {
 
       {/* AI TRANSPARENCY */}
       <section className="section client-ai-section">
-        <div className="section-top client-reveal">
+        <div className="section-top motion-reveal">
           <span>05 / THE DEVELOPMENT APPROACH</span>
           <span>TOOLS & TECHNOLOGY</span>
         </div>
 
-        <div className="client-ai-panel client-reveal">
+        <div className="client-ai-panel motion-reveal">
           <div className="client-ai-orbit">
             <span>AI</span>
           </div>
@@ -465,12 +403,12 @@ export default function ClientWork() {
 
       {/* PROCESS */}
       <section className="section client-process">
-        <div className="section-top client-reveal">
+        <div className="section-top motion-reveal">
           <span>06 / THE PROCESS</span>
           <span>FROM IDEA TO WEBSITE</span>
         </div>
 
-        <div className="client-process-heading client-reveal">
+        <div className="client-process-heading motion-reveal">
           <h2 className="display-heading">
             THE WORK
             <br />
@@ -481,7 +419,7 @@ export default function ClientWork() {
         <div className="client-process-grid">
           {process.map(([number, title, description]) => (
             <article
-              className="client-process-card"
+              className="client-process-card motion-reveal motion-tilt"
               key={number}
             >
               <span className="client-process-number">
@@ -498,12 +436,12 @@ export default function ClientWork() {
 
       {/* PUBLISHED CLIENT FEEDBACK */}
       <section className="section client-review-section">
-        <div className="section-top client-reveal">
+        <div className="section-top motion-reveal">
           <span>07 / CLIENT FEEDBACK</span>
           <span>VERIFIED COLLABORATION REVIEWS</span>
         </div>
 
-        <div className="client-review-heading client-reveal">
+        <div className="client-review-heading motion-reveal">
           <p className="eyebrow">A WORD FROM THE CLIENT</p>
 
           <h2 className="display-heading">
@@ -518,7 +456,7 @@ export default function ClientWork() {
           </p>
         </div>
 
-        <div className="client-reviews-list client-reveal">
+        <div className="client-reviews-list motion-reveal">
           <div className="client-reviews-header">
             <div>
               <span className="eyebrow">
@@ -542,10 +480,12 @@ export default function ClientWork() {
             <div className="client-reviews-empty">
               <span className="client-review-quote-mark">“</span>
               <h3>NO REVIEWS PUBLISHED YET.</h3>
+
               <p>
                 Once the client shares their feedback and it is
                 approved for publication, it will appear here.
               </p>
+
               <span className="client-review-status">
                 <i />
                 WAITING FOR CLIENT FEEDBACK
@@ -554,7 +494,10 @@ export default function ClientWork() {
           ) : (
             <div className="client-review-cards">
               {reviews.map((review) => (
-                <article className="client-review-card" key={review.id}>
+                <article
+                  className="client-review-card motion-reveal motion-tilt"
+                  key={review.id}
+                >
                   <div className="client-review-card-top">
                     <span
                       className="client-review-stars"
@@ -577,6 +520,7 @@ export default function ClientWork() {
                   </div>
 
                   <span className="client-review-quote-mark">“</span>
+
                   <p className="client-review-text">
                     {review.review_text}
                   </p>
@@ -591,6 +535,7 @@ export default function ClientWork() {
 
                     <div>
                       <h3>{review.reviewer_name}</h3>
+
                       {review.reviewer_role && (
                         <p>{review.reviewer_role}</p>
                       )}
@@ -603,7 +548,7 @@ export default function ClientWork() {
         </div>
 
         {/* REVIEW INVITATION */}
-        <div className="client-review-invite client-reveal">
+        <div className="client-review-invite motion-reveal">
           <p>WORKED WITH ME ON BONE JAM?</p>
 
           <LiquidLink to="/review/bone-jam" variant="glass">
@@ -614,12 +559,12 @@ export default function ClientWork() {
 
       {/* CLOSING */}
       <section className="section client-work-ending">
-        <div className="section-top client-reveal">
+        <div className="section-top motion-reveal">
           <span>08 / WHAT'S NEXT?</span>
           <span>MORE COLLABORATIONS AHEAD</span>
         </div>
 
-        <div className="client-ending-content client-reveal">
+        <div className="client-ending-content motion-reveal">
           <p className="eyebrow">
             HAVE AN IDEA WORTH BUILDING?
           </p>
@@ -635,6 +580,7 @@ export default function ClientWork() {
           </LiquidLink>
         </div>
       </section>
+
     </main>
   );
 }

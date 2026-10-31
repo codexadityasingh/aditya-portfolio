@@ -1,156 +1,183 @@
 
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import LiquidLink from "../components/LiquidLink";
+import usePageMotion from "../hooks/usePageMotion";
+import {
+  DEFAULT_SITE_CONTENT,
+  getSiteContent,
+} from "../lib/siteContent";
 
-gsap.registerPlugin(ScrollTrigger);
+function mergeAboutContent(saved = {}) {
+  const defaults = DEFAULT_SITE_CONTENT.about;
 
-const principles = [
-  {
-    number: "01",
-    title: "STAY CURIOUS.",
-    description:
-      "Keep asking questions. Understand how things work and never stop exploring.",
-  },
-  {
-    number: "02",
-    title: "BUILD TO LEARN.",
-    description:
-      "Turn ideas into working things. Experiment, make mistakes and improve.",
-  },
-  {
-    number: "03",
-    title: "CARE ABOUT DETAILS.",
-    description:
-      "Good functionality matters. So does the experience of using it.",
-  },
-];
+  return {
+    hero: {
+      ...defaults.hero,
+      ...(saved.hero || {}),
+    },
 
-const interests = [
-  "WEB DEVELOPMENT",
-  "CREATIVE CODING",
-  "PHOTOGRAPHY",
-  "VIDEOGRAPHY",
-  "UI / UX DESIGN",
-  "MOTION DESIGN",
-];
+    introduction: {
+      ...defaults.introduction,
+      ...(saved.introduction || {}),
+      paragraphs: Array.isArray(saved.introduction?.paragraphs)
+        ? saved.introduction.paragraphs
+        : defaults.introduction.paragraphs,
+    },
+
+    principles: Array.isArray(saved.principles)
+      ? saved.principles
+      : defaults.principles,
+
+    interests: Array.isArray(saved.interests)
+      ? saved.interests
+      : defaults.interests,
+
+    ending: {
+      ...defaults.ending,
+      ...(saved.ending || {}),
+    },
+  };
+}
 
 export default function About() {
-  useEffect(() => {
-    const context = gsap.context(() => {
-      gsap.utils.toArray(".reveal").forEach((element) => {
-        gsap.from(element, {
-          y: 45,
-          opacity: 0,
-          duration: 0.85,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: element,
-            start: "top 87%",
-            toggleActions: "play none none reverse",
-          },
-        });
-      });
+  const pageRef = useRef(null);
 
-      gsap.to(".about-orbit", {
-        rotation: 360,
-        duration: 40,
-        repeat: -1,
-        ease: "none",
-      });
+  const [content, setContent] = useState(
+    () => mergeAboutContent()
+  );
+
+  const [loading, setLoading] = useState(true);
+
+  // Shared animation system
+  usePageMotion(pageRef, loading ? 0 : 1);
+
+  // Keep the orbit animation as a page-specific effect
+  useEffect(() => {
+    const page = pageRef.current;
+
+    if (!page) return;
+
+    const orbit = page.querySelector(".about-orbit");
+
+    if (!orbit) return;
+
+    const animation = gsap.to(orbit, {
+      rotation: 360,
+      duration: 40,
+      repeat: -1,
+      ease: "none",
     });
 
-    return () => context.revert();
+    return () => animation.kill();
   }, []);
 
+  // Load About content from Supabase
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadContent() {
+      try {
+        const savedContent = await getSiteContent("about");
+
+        if (!mounted) return;
+
+        setContent(mergeAboutContent(savedContent));
+      } catch (error) {
+        console.error("Could not load About page content:", error);
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadContent();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const { hero, introduction, principles, interests, ending } = content;
+
   return (
-    <main className="inner-page about-page">
+    <main className="inner-page about-page" ref={pageRef}>
 
       {/* PAGE INTRO */}
       <section className="page-hero">
-        <p className="eyebrow reveal">01 / A LITTLE ABOUT ME</p>
-
-        <h1 className="page-title reveal">
-          A MIND THAT
-          <br />
-          <em>KEEPS BUILDING.</em>
-        </h1>
-
-        <p className="page-lead reveal">
-          Developer in progress. Curious by nature.
-          Interested in making useful things feel
-          considered, intuitive and memorable.
+        <p className="eyebrow motion-reveal">
+          {hero.eyebrow}
         </p>
 
-        <div className="about-hero-index">
-          <span>ADITYA SINGH</span>
-          <span>COMPUTER SCIENCE / CREATIVE TECHNOLOGY</span>
+        <h1 className="page-title motion-reveal">
+          {hero.title}
+          <br />
+          <em>{hero.emphasis}</em>
+        </h1>
+
+        <p className="page-lead motion-reveal">
+          {hero.description}
+        </p>
+
+        <div className="about-hero-index motion-reveal">
+          <span>{hero.name}</span>
+          <span>{hero.subtitle}</span>
         </div>
       </section>
 
       {/* PERSONAL INTRODUCTION */}
       <section className="section about-detail">
-        <div className="section-top reveal">
+        <div className="section-top motion-reveal">
           <span>THE PERSON BEHIND THE SCREEN</span>
           <span>INDIA / 2026</span>
         </div>
 
         <div className="about-detail-grid">
-          <div className="about-identity reveal">
-            <div className="about-identity-art">
+
+          <div className="about-identity motion-reveal">
+            <div className="about-identity-art motion-tilt">
               <div className="about-orbit" />
+
               <div className="about-identity-core">
                 A<span>.</span>
               </div>
+
               <span className="identity-caption">
                 THINK / CREATE / REPEAT
               </span>
             </div>
           </div>
 
-          <div className="about-copy reveal">
-            <p className="eyebrow">HELLO, I'M ADITYA.</p>
+          <div className="about-copy motion-reveal">
+            <p className="eyebrow">
+              {introduction.eyebrow}
+            </p>
 
-            <h2 className="display-heading">
-              CURIOUS
-              <br />
-              ABOUT HOW
-              <br />
-              <em>THINGS WORK.</em>
+            <h2
+              className="display-heading"
+              style={{ whiteSpace: "pre-line" }}
+            >
+              {introduction.heading}
             </h2>
 
-            <p>
-              I'm a Computer Science student focused on
-              growing as a developer while exploring
-              the creative side of technology.
-            </p>
-
-            <p>
-              I enjoy learning by building: breaking
-              down a problem, figuring out the right
-              tools, creating an interface and improving
-              it until it feels right.
-            </p>
-
-            <p>
-              Outside development, I'm interested in
-              photography, videography, visual storytelling
-              and motion — all the things that make
-              a digital experience feel alive.
-            </p>
+            {introduction.paragraphs.map((paragraph, index) => (
+              <p key={index}>
+                {paragraph}
+              </p>
+            ))}
           </div>
         </div>
       </section>
 
       {/* APPROACH */}
       <section className="section about-values">
-        <div className="section-top reveal">
+        <div className="section-top motion-reveal">
           <span>02 / HOW I THINK</span>
           <span>MY APPROACH</span>
         </div>
 
-        <div className="section-heading-row reveal">
+        <div className="section-heading-row motion-reveal">
           <h2 className="display-heading">
             THE WAY
             <br />
@@ -164,8 +191,11 @@ export default function About() {
         </div>
 
         <div className="value-list">
-          {principles.map((principle) => (
-            <div className="value-row reveal" key={principle.number}>
+          {principles.map((principle, index) => (
+            <div
+              className="value-row motion-reveal motion-tilt"
+              key={principle.number || index}
+            >
               <span>{principle.number}</span>
 
               <h3>{principle.title}</h3>
@@ -178,12 +208,12 @@ export default function About() {
 
       {/* INTERESTS */}
       <section className="section about-interests">
-        <div className="section-top reveal">
+        <div className="section-top motion-reveal">
           <span>03 / BEYOND THE CODE</span>
           <span>THINGS THAT INTEREST ME</span>
         </div>
 
-        <div className="section-heading-row reveal">
+        <div className="section-heading-row motion-reveal">
           <h2 className="display-heading">
             MORE THAN
             <br />
@@ -196,11 +226,18 @@ export default function About() {
           </p>
         </div>
 
-        <div className="interest-grid reveal">
+        <div className="interest-grid">
           {interests.map((interest, index) => (
-            <div className="interest-item" key={interest}>
-              <span>0{index + 1}</span>
+            <div
+              className="interest-item motion-reveal motion-tilt"
+              key={`${interest}-${index}`}
+            >
+              <span>
+                {String(index + 1).padStart(2, "0")}
+              </span>
+
               <h3>{interest}</h3>
+
               <b>↗</b>
             </div>
           ))}
@@ -209,17 +246,19 @@ export default function About() {
 
       {/* ENDING */}
       <section className="section about-ending">
-        <div className="about-ending-content reveal">
-          <p className="eyebrow">STILL LEARNING. ALWAYS BUILDING.</p>
+        <div className="about-ending-content motion-reveal">
+          <p className="eyebrow">
+            {ending.eyebrow}
+          </p>
 
           <h2 className="display-heading">
-            THIS IS JUST
+            {ending.title}
             <br />
-            <em>THE BEGINNING.</em>
+            <em>{ending.emphasis}</em>
           </h2>
 
-          <LiquidLink to="/projects" variant="solid">
-            EXPLORE MY WORK ↗
+          <LiquidLink to={ending.buttonLink || "/projects"} variant="solid">
+            {ending.button} ↗
           </LiquidLink>
         </div>
       </section>
