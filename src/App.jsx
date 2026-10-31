@@ -1,6 +1,11 @@
 
 import { useCallback, useEffect, useState } from "react";
-import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
+import {
+  Routes,
+  Route,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import gsap from "gsap";
@@ -14,9 +19,15 @@ import FeatherTransition from "./components/FeatherTransition";
 import Home from "./pages/Home";
 import About from "./pages/About";
 import Projects from "./pages/Projects";
+
+// Client Work pages
 import ClientWork from "./pages/ClientWork";
+import BoneJam from "./pages/Bonejam";
+
 import Explore from "./pages/Explore";
 import Contact from "./pages/Contact";
+import ReviewSubmit from "./pages/ReviewSubmit";
+import AdminReviews from "./pages/AdminReviews";
 
 import "./App.css";
 
@@ -45,7 +56,10 @@ export default function App() {
         });
       });
     } else {
-      window.scrollTo({ top: 0, behavior: "auto" });
+      window.scrollTo({
+        top: 0,
+        behavior: "auto",
+      });
     }
 
     const timer = window.setTimeout(() => {
@@ -74,12 +88,33 @@ export default function App() {
 
       <PageTransition>
         <Routes>
+          {/* Main pages */}
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
           <Route path="/projects" element={<Projects />} />
+
+          {/* Client Work */}
           <Route path="/client-work" element={<ClientWork />} />
+          <Route
+            path="/client-work/bone-jam"
+            element={<BoneJam />}
+          />
+
+          {/* Other pages */}
           <Route path="/explore" element={<Explore />} />
           <Route path="/contact" element={<Contact />} />
+
+          {/* Review submission */}
+          <Route path="/review" element={<ReviewSubmit />} />
+          <Route
+            path="/review/:projectSlug"
+            element={<ReviewSubmit />}
+          />
+
+          {/* Admin dashboard */}
+          <Route path="/admin/reviews" element={<AdminReviews />} />
+
+          {/* Fallback */}
           <Route path="*" element={<Home />} />
         </Routes>
       </PageTransition>

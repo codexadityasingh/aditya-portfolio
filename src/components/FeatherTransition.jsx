@@ -1,5 +1,5 @@
 
-import { useEffect, useRef } from "react";
+import { useLayoutEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -10,26 +10,20 @@ export default function FeatherTransition() {
   const overlayRef = useRef(null);
   const location = useLocation();
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (location.pathname !== "/") return;
 
     const hero = document.querySelector(".hero");
     const overlay = overlayRef.current;
 
-    if (!hero || !overlay) {
-      console.warn("FeatherTransition: Hero or overlay not found.");
-      return;
-    }
+    if (!hero || !overlay) return;
 
     const feather = overlay.querySelector(".falling-feather");
     const bubble = overlay.querySelector(".feather-orb");
     const waves = overlay.querySelectorAll(".bubble-wave");
     const burstWash = overlay.querySelector(".bubble-burst-wash");
 
-    if (!feather || !bubble || waves.length === 0 || !burstWash) {
-      console.warn("FeatherTransition: Animation elements missing.");
-      return;
-    }
+    if (!feather || !bubble || !waves.length || !burstWash) return;
 
     const reduceMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
@@ -41,15 +35,18 @@ export default function FeatherTransition() {
     }
 
     const context = gsap.context(() => {
+      const viewportHeight = () => window.innerHeight;
+
       gsap.set(overlay, { autoAlpha: 1 });
 
       gsap.set(feather, {
         x: 0,
-        y: -window.innerHeight * 0.38,
+        y: () => -viewportHeight() * 0.38,
         rotation: -35,
         scale: 1,
         opacity: 0,
         transformOrigin: "50% 50%",
+        force3D: true,
       });
 
       gsap.set(bubble, {
@@ -61,23 +58,26 @@ export default function FeatherTransition() {
         rotation: 0,
         opacity: 0,
         transformOrigin: "center",
+        force3D: true,
       });
 
       gsap.set(waves, {
         scale: 0.02,
         opacity: 0,
         transformOrigin: "center",
+        force3D: true,
       });
 
       gsap.set(burstWash, {
         scale: 0.02,
         opacity: 0,
         transformOrigin: "center",
+        force3D: true,
       });
 
       const animation = gsap.timeline({ paused: true });
 
-      // 1. Feather falls into view.
+      // 1. Feather enters the scene.
       animation.to(feather, {
         y: -15,
         x: 35,
@@ -87,7 +87,7 @@ export default function FeatherTransition() {
         ease: "power1.out",
       });
 
-      // 2. Feather drifts down.
+      // 2. Feather gently drifts.
       animation.to(feather, {
         y: 100,
         x: -15,
@@ -96,7 +96,7 @@ export default function FeatherTransition() {
         ease: "sine.inOut",
       });
 
-      // 3. Feather contracts.
+      // 3. Feather contracts and disappears.
       animation.to(feather, {
         scale: 0.04,
         rotation: 100,
@@ -105,7 +105,7 @@ export default function FeatherTransition() {
         ease: "power2.in",
       });
 
-      // 4. Clear bubble forms.
+      // 4. Bubble forms.
       animation.fromTo(
         bubble,
         { scale: 0.05, opacity: 0 },
@@ -135,7 +135,7 @@ export default function FeatherTransition() {
         ease: "sine.inOut",
       });
 
-      // 6. Bubble stretches before bursting.
+      // 6. Bubble stretches.
       animation.to(bubble, {
         scaleX: 1.14,
         scaleY: 0.88,
@@ -143,7 +143,7 @@ export default function FeatherTransition() {
         ease: "power2.in",
       });
 
-      // 7. Bubble pops and waves expand.
+      // 7. Bubble bursts and waves expand.
       animation.to(
         bubble,
         {
@@ -178,7 +178,7 @@ export default function FeatherTransition() {
         "<"
       );
 
-      // 8. Waves disappear.
+      // 8. Waves fade away.
       animation.to(
         waves,
         {
@@ -199,7 +199,7 @@ export default function FeatherTransition() {
         "<"
       );
 
-      // 9. Reveal the next section.
+      // 9. Reveal the page.
       animation.to(
         overlay,
         {
@@ -223,12 +223,12 @@ export default function FeatherTransition() {
       });
     }, overlay);
 
-    const refreshTimer = window.setTimeout(() => {
+    const refreshFrame = requestAnimationFrame(() => {
       ScrollTrigger.refresh();
-    }, 250);
+    });
 
     return () => {
-      window.clearTimeout(refreshTimer);
+      cancelAnimationFrame(refreshFrame);
       context.revert();
     };
   }, [location.pathname]);
@@ -247,9 +247,10 @@ export default function FeatherTransition() {
         placeItems: "center",
         overflow: "hidden",
         visibility: "hidden",
+        contain: "layout paint",
       }}
     >
-      {/* Feather */}
+      {/* Falling feather */}
       <svg
         className="falling-feather"
         viewBox="0 0 120 220"
@@ -258,7 +259,7 @@ export default function FeatherTransition() {
           width: 95,
           height: 145,
           zIndex: 5,
-          filter: "drop-shadow(0 5px 15px rgba(255,255,255,.3))",
+          filter: "drop-shadow(0 5px 12px rgba(255,255,255,.25))",
         }}
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
@@ -303,7 +304,7 @@ export default function FeatherTransition() {
         </defs>
       </svg>
 
-      {/* Clear soap bubble */}
+      {/* Transparent glass bubble */}
       <div
         className="feather-orb"
         style={{
@@ -350,13 +351,13 @@ export default function FeatherTransition() {
             height: "9%",
             borderRadius: "50%",
             background: "rgba(255,255,255,.6)",
-            filter: "blur(5px)",
+            filter: "blur(4px)",
             transform: "rotate(-30deg)",
           }}
         />
       </div>
 
-      {/* Expanding transparent waves */}
+      {/* Expanding glass rings */}
       {[0, 1, 2].map((index) => (
         <div
           className="bubble-wave"
@@ -377,12 +378,12 @@ export default function FeatherTransition() {
                 transparent 54%
               )
             `,
-            filter: "blur(4px)",
+            willChange: "transform, opacity",
           }}
         />
       ))}
 
-      {/* Broad transparent burst wash */}
+      {/* Broad transparent burst */}
       <div
         className="bubble-burst-wash"
         style={{
@@ -401,7 +402,7 @@ export default function FeatherTransition() {
               transparent 70%
             )
           `,
-          filter: "blur(12px)",
+          willChange: "transform, opacity",
         }}
       />
     </div>

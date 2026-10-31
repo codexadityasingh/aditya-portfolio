@@ -9,6 +9,7 @@ export default function PageTransition({ children }) {
 
   useLayoutEffect(() => {
     const container = containerRef.current;
+
     if (!container) return;
 
     const context = gsap.context(() => {
@@ -17,24 +18,18 @@ export default function PageTransition({ children }) {
       ).matches;
 
       if (reduceMotion) {
-        gsap.set(container, { opacity: 1, y: 0 });
+        gsap.set(container, { opacity: 1 });
         return;
       }
 
       gsap.fromTo(
         container,
-        {
-          opacity: 0,
-          y: 18,
-          filter: "blur(5px)",
-        },
+        { opacity: 0 },
         {
           opacity: 1,
-          y: 0,
-          filter: "blur(0px)",
-          duration: 0.75,
-          ease: "power3.out",
-          clearProps: "opacity,transform,filter",
+          duration: 0.55,
+          ease: "power2.out",
+          clearProps: "opacity",
         }
       );
     }, container);
