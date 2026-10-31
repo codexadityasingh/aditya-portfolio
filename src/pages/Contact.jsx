@@ -218,8 +218,11 @@ Project details:
 
 Looking forward to hearing from you.`;
 
+  // OPEN GMAIL COMPOSE DIRECTLY
   const emailLink =
-    `mailto:${emailAddress}?subject=${encodeURIComponent(emailSubject)}` +
+    `https://mail.google.com/mail/?view=cm&fs=1` +
+    `&to=${encodeURIComponent(emailAddress)}` +
+    `&su=${encodeURIComponent(emailSubject)}` +
     `&body=${encodeURIComponent(emailBody)}`;
 
   return (
@@ -295,7 +298,7 @@ Looking forward to hearing from you.`;
                   href={url}
                   key={`${channel.number}-${channel.name}-${index}`}
                   target={external ? "_blank" : undefined}
-                  rel={external ? "noreferrer" : undefined}
+                  rel={external ? "noopener noreferrer" : undefined}
                 >
                   <span className="contact-number">
                     {channel.number ||
@@ -358,7 +361,12 @@ Looking forward to hearing from you.`;
             <em>{ending.emphasis}</em>
           </h2>
 
-          <a href={emailLink} className="contact-email-cta">
+          <a
+            href={emailLink}
+            className="contact-email-cta"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             {ending.button || "SEND ME AN EMAIL ↗"}
           </a>
         </div>
