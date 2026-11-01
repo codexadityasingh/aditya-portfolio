@@ -317,7 +317,7 @@ export default function Home() {
   };
 
   // Desktop mouse-drag support for the two homepage card carousels.
-  // Touch and trackpad scrolling remain native, including scroll snapping.
+  // Trackpads use native horizontal scrolling and CSS scroll-snap.
   useEffect(() => {
     const cleanups = [];
 
@@ -363,18 +363,7 @@ export default function Home() {
         }
       };
 
-      // Explicit trackpad support: route horizontal wheel gestures to this
-      // carousel instead of relying on browser-specific overflow handling.
-      const onWheel = (event) => {
-        const horizontalDelta = event.deltaX || (event.shiftKey ? event.deltaY : 0);
-        if (Math.abs(horizontalDelta) < 0.5) return;
-
-        event.preventDefault();
-        carousel.scrollLeft += horizontalDelta;
-      };
-
       carousel.addEventListener("pointerdown", onPointerDown);
-      carousel.addEventListener("wheel", onWheel, { passive: false });
       window.addEventListener("pointermove", onPointerMove);
       window.addEventListener("pointerup", stopDragging);
       window.addEventListener("pointercancel", stopDragging);
@@ -382,7 +371,6 @@ export default function Home() {
 
       cleanups.push(() => {
         carousel.removeEventListener("pointerdown", onPointerDown);
-        carousel.removeEventListener("wheel", onWheel);
         window.removeEventListener("pointermove", onPointerMove);
         window.removeEventListener("pointerup", stopDragging);
         window.removeEventListener("pointercancel", stopDragging);
@@ -429,6 +417,74 @@ export default function Home() {
     setToolkitDragX(0);
     setToolkitIsDragging(false);
   };
+
+  // Consistent trackpad navigation for Personal Projects, Client Work and Toolkit.
+  // A strong swipe moves one item only; a short quiet period rearms the next swipe.
+  useEffect(() => {
+    const carousels = [
+      { element: projectCarouselRef.current, type: "scroll", ref: projectCarouselRef },
+      { element: clientCarouselRef.current, type: "scroll", ref: clientCarouselRef },
+      { element: toolkitViewportRef.current, type: "toolkit" },
+    ].filter((item) => item.element);
+
+    const cleanups = [];
+
+    carousels.forEach(({ element, type, ref }) => {
+      const SWIPE_THRESHOLD = 30;
+      const REARM_DELAY = 65;
+
+      let accumulatedDelta = 0;
+      let gestureHandled = false;
+      let resetTimer = null;
+
+      const resetGesture = () => {
+        accumulatedDelta = 0;
+        gestureHandled = false;
+        resetTimer = null;
+      };
+
+      const scheduleRearm = () => {
+        if (resetTimer) window.clearTimeout(resetTimer);
+        resetTimer = window.setTimeout(resetGesture, REARM_DELAY);
+      };
+
+      const onWheel = (event) => {
+        // Use horizontal trackpad movement only. Do not hijack vertical mouse-wheel input.
+        if (event.shiftKey || Math.abs(event.deltaX) < 0.5) return;
+
+        event.preventDefault();
+        scheduleRearm();
+
+        // Ignore the rest of this swipe and its momentum.
+        if (gestureHandled) return;
+
+        accumulatedDelta += event.deltaX;
+
+        if (Math.abs(accumulatedDelta) < SWIPE_THRESHOLD) return;
+
+        const direction = Math.sign(accumulatedDelta);
+        gestureHandled = true;
+        accumulatedDelta = 0;
+
+        if (type === "toolkit") {
+          setToolIndex((current) =>
+            (current + direction + tools.length) % tools.length
+          );
+        } else {
+          scrollCarousel(ref, direction);
+        }
+      };
+
+      element.addEventListener("wheel", onWheel, { passive: false });
+
+      cleanups.push(() => {
+        element.removeEventListener("wheel", onWheel);
+        if (resetTimer) window.clearTimeout(resetTimer);
+      });
+    });
+
+    return () => cleanups.forEach((cleanup) => cleanup());
+  }, [featuredProjects, projectsLoading]);
 
   // Centre the first card on initial load.
   useEffect(() => {
@@ -847,7 +903,7 @@ export default function Home() {
                     ? "next"
                     : "previous";
                 const signedPosition = position === 0 ? 0 : position === 1 ? 1 : -1;
-                const spacing = typeof window !== "undefined" && window.innerWidth <= 700 ? 86 : 53;
+                const spacing = typeof window !== "undefined" && window.innerWidth <= 700 ? 105 : 53;
                 const offset = `calc(${signedPosition * spacing}vw + ${toolkitDragX}px)`;
                 const scale = position === 0 ? 1 : 0.78;
                 const opacity = position === 0 ? 1 : 0.5;
