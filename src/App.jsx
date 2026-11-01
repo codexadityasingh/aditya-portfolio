@@ -43,6 +43,9 @@ import AdminAbout from "./admin/AdminAbout";
 import AdminServices from "./admin/AdminServices";
 import AdminContact from "./admin/AdminContact";
 
+// PUBLIC ADMIN DEMO
+import AdminDemo from "./admin/AdminDemo";
+
 import "./App.css";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -129,77 +132,84 @@ export default function App() {
       )}
 
       <Routes>
-        {/* ADMIN LOGIN */}
+        {/* =====================================
+            PUBLIC ADMIN DEMO
+            Separate from the real admin system
+        ====================================== */}
+        <Route
+          path="/admin-demo/*"
+          element={<AdminDemo />}
+        />
+
+        {/* =====================================
+            REAL ADMIN LOGIN
+        ====================================== */}
         <Route
           path="/admin"
           element={<AdminLogin />}
         />
 
-        {/* ADMIN WORKSPACE */}
+        {/* =====================================
+            REAL ADMIN WORKSPACE
+        ====================================== */}
         <Route
           path="/admin"
           element={<AdminLayout />}
         >
-          {/* DASHBOARD */}
           <Route
             path="dashboard"
             element={<AdminDashboard />}
           />
 
-          {/* PERSONAL PROJECTS */}
           <Route
             path="projects"
             element={<AdminProjects />}
           />
 
-          {/* CLIENT REVIEWS */}
           <Route
             path="reviews"
             element={<AdminReviews />}
           />
 
-          {/* CLIENT WORK CMS */}
           <Route
             path="client-work"
             element={<AdminClientWork />}
           />
 
-          {/* ABOUT EDITOR */}
           <Route
             path="about"
             element={<AdminAbout />}
           />
 
-          {/* SERVICES AND PRICING EDITOR */}
           <Route
             path="services"
             element={<AdminServices />}
           />
 
-          {/* CONTACT EDITOR */}
           <Route
             path="contact"
             element={<AdminContact />}
           />
         </Route>
 
-        {/* PUBLIC WEBSITE */}
+        {/* =====================================
+            PUBLIC WEBSITE
+        ====================================== */}
         <Route
-          element={<PublicLayout onTalk={handleTalkClick} />}
+          element={
+            <PublicLayout onTalk={handleTalkClick} />
+          }
         >
-          {/* HOME */}
           <Route
             path="/"
             element={<Home />}
           />
 
-          {/* ABOUT */}
           <Route
             path="/about"
             element={<About />}
           />
 
-          {/* PERSONAL PROJECTS */}
           <Route
             path="/projects"
             element={<Projects />}
@@ -210,37 +220,33 @@ export default function App() {
             element={<PersonalProjectDetail />}
           />
 
-          {/* CLIENT WORK ARCHIVE */}
+          {/* CLIENT WORK */}
           <Route
             path="/client-work"
             element={<ClientWork />}
           />
 
-          {/* EXISTING BONE JAM CASE STUDY */}
           <Route
             path="/client-work/bone-jam"
             element={<BoneJam />}
           />
 
-          {/* DYNAMIC CLIENT CASE STUDIES */}
           <Route
             path="/client-work/:slug"
             element={<ClientWorkDetail />}
           />
 
-          {/* EXPLORE */}
+          {/* OTHER PAGES */}
           <Route
             path="/explore"
             element={<Explore />}
           />
 
-          {/* CONTACT */}
           <Route
             path="/contact"
             element={<Contact />}
           />
 
-          {/* CLIENT REVIEW SUBMISSION */}
           <Route
             path="/review"
             element={<ReviewSubmit />}
