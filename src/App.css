@@ -9945,3 +9945,32 @@ main > .home-expertise .toolkit-carousel-viewport {
     right: calc(50% - 48px);
   }
 }
+
+/* ================================================
+   HOMEPAGE CAROUSELS — PREDICTABLE CARD LAYERING
+   ================================================ */
+.home-carousel-stage .mobile-carousel {
+  isolation: isolate;
+}
+
+.home-carousel-stage .mobile-carousel-card {
+  position: relative;
+  z-index: 1;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.home-carousel-stage .mobile-carousel-card:active {
+  z-index: 2;
+}
+
+/* Toolkit drag layering is controlled per-card by Home.jsx. */
+main > .home-expertise .toolkit-carousel-track {
+  isolation: isolate;
+}
+
+main > .home-expertise .toolkit-slide {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}

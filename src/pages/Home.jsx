@@ -8,18 +8,56 @@ import { DEFAULT_SITE_CONTENT, getSiteContent } from "../lib/siteContent";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const clientWorks = [
-  {
-    number: "01",
-    title: "BONE JAM",
-    category: "WEB DEVELOPMENT / CLIENT WORK",
-    description:
-      "A collaborative website for custom Minecraft creations, bringing a distinctive creative vision to life.",
-    visual: "client-website-visual",
-    symbol: "↗",
-    status: "FEATURED COLLABORATION",
-  },
-];
+const boneJamFallback = {
+  id: "bone-jam-fallback",
+  slug: "bone-jam",
+  number: "001",
+  title: "BONE JAM",
+  category: "WEB DEVELOPMENT",
+  project_type: "CREATIVE COLLABORATION",
+  description:
+    "A collaborative website project for a Minecraft-inspired creative platform.",
+  status: "LIVE",
+  featured: true,
+  sort_order: 0,
+};
+
+function prepareClientWorks(databaseProjects = []) {
+  const databaseBoneJam = databaseProjects.find(
+    (project) => project.slug === "bone-jam"
+  );
+  const boneJam = databaseBoneJam || boneJamFallback;
+  const otherProjects = databaseProjects.filter(
+    (project) => project.slug !== "bone-jam"
+  );
+
+  return [boneJam, ...otherProjects]
+    .sort((a, b) => {
+      if (a.slug === "bone-jam") return -1;
+      if (b.slug === "bone-jam") return 1;
+      if (a.featured !== b.featured) return a.featured ? -1 : 1;
+      return (a.sort_order ?? 0) - (b.sort_order ?? 0);
+    })
+    .map((project, index) => ({
+      ...project,
+      number: String(index + 1).padStart(2, "0"),
+      title:
+        project.title ||
+        project.project_name ||
+        project.name ||
+        "UNTITLED PROJECT",
+      category: project.category || "CREATIVE DEVELOPMENT",
+      projectType:
+        project.project_type ||
+        project.project_type_label ||
+        "CLIENT COLLABORATION",
+      description:
+        project.description || "A creative project brought to life.",
+      route: `/client-work/${project.slug}`,
+      visual: "client-website-visual",
+      symbol: "↗",
+    }));
+}
 
 export default function Home() {
   const pageRef = useRef(null);
@@ -38,6 +76,8 @@ export default function Home() {
 
   const [featuredProjects, setFeaturedProjects] = useState([]);
   const [projectsLoading, setProjectsLoading] = useState(true);
+  const [clientWorks, setClientWorks] = useState([boneJamFallback]);
+  const [clientWorksLoading, setClientWorksLoading] = useState(true);
   const [toolIndex, setToolIndex] = useState(0);
   const [toolkitCategories, setToolkitCategories] = useState(
     DEFAULT_SITE_CONTENT.explore.tools
@@ -87,10 +127,10 @@ export default function Home() {
           "id, title, slug, category, description, status, cover_image_url, featured, sort_order"
         )
         .eq("published", true)
-        .order("featured", { ascending: false })
-        .order("sort_order", { ascending: true })
+        // Always include recently published work; featured/sort-order values
+        // should not push a newly posted project out of the homepage preview.
         .order("created_at", { ascending: false })
-        .limit(2);
+        .limit(4);
 
       if (!active) return;
 
@@ -105,6 +145,38 @@ export default function Home() {
     };
 
     loadFeaturedProjects();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Load the same published client-work records used by the Client Work archive.
+  useEffect(() => {
+    let active = true;
+
+    const loadClientWorks = async () => {
+      const { data, error } = await supabase
+        .from("client_work_projects")
+        .select("*")
+        .eq("published", true)
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: false });
+
+      if (!active) return;
+
+      if (error) {
+        console.error("Unable to load homepage client work:", error);
+        // Keep the original Bone Jam preview available if the database request fails.
+        setClientWorks(prepareClientWorks([]));
+      } else {
+        setClientWorks(prepareClientWorks(data || []));
+      }
+
+      setClientWorksLoading(false);
+    };
+
+    loadClientWorks();
 
     return () => {
       active = false;
@@ -411,17 +483,20 @@ export default function Home() {
   // then snap to the nearest card only after release.
   const handleToolkitPointerDown = (event) => {
     if (event.pointerType === "mouse" && event.button !== 0) return;
+
     toolkitDrag.current = {
       active: true,
       startX: event.clientX,
       lastX: event.clientX,
       pointerId: event.pointerId,
     };
+
     setToolkitIsDragging(true);
   };
 
   const handleToolkitPointerMove = (event) => {
     if (!toolkitDrag.current.active) return;
+
     const delta = event.clientX - toolkitDrag.current.startX;
     toolkitDrag.current.lastX = event.clientX;
     setToolkitDragX(delta);
@@ -429,6 +504,7 @@ export default function Home() {
 
   const finishToolkitDrag = () => {
     if (!toolkitDrag.current.active) return;
+
     const delta = toolkitDrag.current.lastX - toolkitDrag.current.startX;
     const viewportWidth =
       toolkitViewportRef.current?.getBoundingClientRect().width ||
@@ -729,50 +805,42 @@ export default function Home() {
               {featuredProjects.map((project, index) => (
                 <Link
                   to={`/projects/${project.slug}`}
-                  className={`float-card mobile-carousel-card home-dynamic-project-card ${
-                    index % 2 === 0 ? "levelup-visual" : "web-visual"
+                  className={`float-card mobile-carousel-card ${
+                    index % 2 === 0
+                      ? "project-visual-one"
+                      : "project-visual-two"
                   }`}
                   key={project.id}
                   aria-label={`View ${project.title} project`}
                 >
                   <div className="float-card-art">
-                    {project.cover_image_url && (
-                      <img
-                        className="home-project-cover"
-                        src={project.cover_image_url}
-                        alt={`${project.title} cover`}
-                        loading="lazy"
-                      />
-                    )}
-
-                    <div className="home-project-shade" />
                     <span className="card-number">
-                      {String(index + 1).padStart(2, "0")} / FEATURED
+                      {String(index + 1).padStart(2, "0")} / PERSONAL PROJECT
                     </span>
-
                     <div className="card-art-type">
                       {project.title}
-                      <small>{project.category}</small>
+                      <small>{project.category || "DEVELOPMENT"}</small>
                     </div>
-
                     <span className="card-art-footer">
                       PERSONAL PROJECT / ADI
                     </span>
-                    <span className="project-art-symbol">
-                      {index % 2 === 0 ? "↗" : "◈"}
-                    </span>
-                    <span className="home-project-status">
-                      {project.status}
-                    </span>
+                    <span className="project-art-symbol">↗</span>
                   </div>
 
                   <div className="float-card-info">
                     <div>
-                      <span className="eyebrow">{project.category}</span>
+                      <span className="eyebrow">
+                        {project.category || "DEVELOPMENT"}
+                      </span>
                       <h3>{project.title}</h3>
-                      <p>{project.description}</p>
+                      <p>
+                        {project.description ||
+                          "A project built through experimentation and development."}
+                      </p>
                     </div>
-                    <span className="card-arrow">↗</span>
+                    <span className="card-arrow" aria-hidden="true">
+                      ↗
+                    </span>
                   </div>
                 </Link>
               ))}
@@ -790,7 +858,7 @@ export default function Home() {
           </div>
         ) : (
           <p className="home-project-loading">
-            NEW PROJECTS ARE TAKING SHAPE. CHECK BACK SOON.
+            NEW PROJECTS COMING SOON.
           </p>
         )}
 
@@ -821,68 +889,72 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="home-carousel-stage">
-          <button
-            className="carousel-arrow carousel-arrow-prev"
-            type="button"
-            aria-label="Previous client project"
-            disabled={clientWorks.length < 2}
-            onClick={() => scrollCarousel(clientCarouselRef, -1)}
-          >
-            ←
-          </button>
+        {clientWorksLoading ? (
+          <p className="home-project-loading">LOADING CLIENT WORK...</p>
+        ) : (
+          <div className="home-carousel-stage">
+            <button
+              className="carousel-arrow carousel-arrow-prev"
+              type="button"
+              aria-label="Previous client project"
+              disabled={clientWorks.length < 2}
+              onClick={() => scrollCarousel(clientCarouselRef, -1)}
+            >
+              ←
+            </button>
 
-          <div
-            className="featured-grid mobile-carousel mobile-client-carousel"
-            ref={clientCarouselRef}
-          >
-            {clientWorks.map((project) => (
-              <Link
-                to="/client-work/bone-jam"
-                className={`float-card mobile-carousel-card ${project.visual}`}
-                key={project.number}
-                aria-label="View Bone Jam case study"
-              >
-                <div className="float-card-art">
-                  <span className="card-number">
-                    {project.number} / CLIENT WORK
-                  </span>
-                  <div className="card-art-type">
-                    BONE JAM
-                    <small>CUSTOM MINECRAFT CREATIONS</small>
+            <div
+              className="featured-grid mobile-carousel mobile-client-carousel"
+              ref={clientCarouselRef}
+            >
+              {clientWorks.map((project) => (
+                <Link
+                  to={project.route}
+                  className={`float-card mobile-carousel-card ${project.visual}`}
+                  key={project.id || project.slug}
+                  aria-label={`View ${project.title} case study`}
+                >
+                  <div className="float-card-art">
+                    <span className="card-number">
+                      {project.number} / CLIENT WORK
+                    </span>
+                    <div className="card-art-type">
+                      {project.title}
+                      <small>{project.projectType}</small>
+                    </div>
+                    <span className="card-art-footer">
+                      COLLABORATION / ADI
+                    </span>
+                    <span className="project-art-symbol">
+                      {project.symbol}
+                    </span>
                   </div>
-                  <span className="card-art-footer">
-                    COLLABORATION / ADI
-                  </span>
-                  <span className="project-art-symbol">
-                    {project.symbol}
-                  </span>
-                </div>
 
-                <div className="float-card-info">
-                  <div>
-                    <span className="eyebrow">{project.category}</span>
-                    <h3>BONE JAM</h3>
-                    <p>{project.description}</p>
+                  <div className="float-card-info">
+                    <div>
+                      <span className="eyebrow">{project.category}</span>
+                      <h3>{project.title}</h3>
+                      <p>{project.description}</p>
+                    </div>
+                    <span className="card-arrow" aria-hidden="true">
+                      ↗
+                    </span>
                   </div>
-                  <span className="card-arrow" aria-hidden="true">
-                    ↗
-                  </span>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              ))}
+            </div>
+
+            <button
+              className="carousel-arrow carousel-arrow-next"
+              type="button"
+              aria-label="Next client project"
+              disabled={clientWorks.length < 2}
+              onClick={() => scrollCarousel(clientCarouselRef, 1)}
+            >
+              →
+            </button>
           </div>
-
-          <button
-            className="carousel-arrow carousel-arrow-next"
-            type="button"
-            aria-label="Next client project"
-            disabled={clientWorks.length < 2}
-            onClick={() => scrollCarousel(clientCarouselRef, 1)}
-          >
-            →
-          </button>
-        </div>
+        )}
 
         <div className="center-action reveal">
           <LiquidLink to="/client-work">
@@ -970,9 +1042,34 @@ export default function Home() {
                       ? 105
                       : 53;
 
+                  // Bring the card being dragged toward ABOVE the current card.
+                  // Negative drag reveals the next card; positive drag reveals previous.
+                  const dragDirection = Math.sign(toolkitDragX);
+                  const isIncoming =
+                    (dragDirection < 0 && isNext) ||
+                    (dragDirection > 0 && isPrevious);
+                  const dragProgress = Math.min(
+                    Math.abs(toolkitDragX) /
+                      Math.max(
+                        (toolkitViewportRef.current?.getBoundingClientRect().width || 320) * 0.72,
+                        1
+                      ),
+                    1
+                  );
+
                   const offset = `calc(${signedPosition * spacing}vw + ${toolkitDragX}px)`;
-                  const scale = isActive ? 1 : 0.78;
-                  const opacity = isActive ? 1 : isVisible ? 0.5 : 0;
+                  const scale = isActive
+                    ? 1 - (isIncoming ? dragProgress * 0.12 : 0)
+                    : isIncoming
+                    ? 0.78 + dragProgress * 0.22
+                    : 0.78;
+                  const opacity = isActive
+                    ? 1 - (isIncoming ? dragProgress * 0.18 : 0)
+                    : isIncoming
+                    ? 0.5 + dragProgress * 0.5
+                    : isVisible
+                    ? 0.5
+                    : 0;
 
                   const toolNames = (tool.tools || [])
                     .map((item) => item.name)
@@ -991,7 +1088,9 @@ export default function Home() {
                         visibility: isVisible ? "visible" : "hidden",
                         pointerEvents: isVisible ? "auto" : "none",
                         transition: toolkitIsDragging ? "none" : undefined,
-                        zIndex: isActive ? 5 : 1,
+                        // The incoming card must sit above the outgoing card
+                        // throughout the gesture, not only after the snap.
+                        zIndex: isIncoming ? 6 : isActive ? 5 : isVisible ? 1 : 0,
                       }}
                       key={tool.id || `${tool.number}-${index}`}
                       aria-hidden={!isActive}
