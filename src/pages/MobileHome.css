@@ -1,0 +1,374 @@
+/*
+  Homepage carousel system.
+  Applies on desktop, tablet and mobile.
+  Existing App.css continues to control the overall visual identity.
+*/
+
+/* Shared horizontal carousel behaviour on every screen size. */
+.mobile-carousel {
+  --carousel-card-width: min(72vw, 680px);
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: clamp(14px, 2vw, 26px);
+  width: calc(100% + 12vw);
+  margin-left: -6vw;
+  margin-right: -6vw;
+  padding: 24px 14vw 34px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 14vw;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(210, 230, 216, .35) transparent;
+  cursor: grab;
+}
+
+.mobile-carousel:active {
+  cursor: grabbing;
+}
+
+.mobile-carousel::-webkit-scrollbar {
+  height: 5px;
+}
+
+.mobile-carousel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.mobile-carousel::-webkit-scrollbar-thumb {
+  background: rgba(210, 230, 216, .28);
+  border-radius: 20px;
+}
+
+.mobile-carousel > .mobile-carousel-card {
+  flex: 0 0 var(--carousel-card-width);
+  min-width: 0;
+  max-width: 760px;
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+}
+
+.mobile-carousel .float-card {
+  transform: none;
+  min-width: 0;
+}
+
+.mobile-carousel .float-card-art {
+  height: clamp(260px, 35vw, 430px);
+}
+
+.mobile-carousel .float-card-info {
+  padding-top: 20px;
+  gap: 18px;
+}
+
+.mobile-carousel .float-card-info h3 {
+  line-height: 1.15;
+}
+
+.mobile-carousel .float-card-info p {
+  line-height: 1.75;
+}
+
+/* Keep the carousels visually separated from their section headings. */
+.mobile-project-carousel,
+.mobile-client-carousel,
+.mobile-tool-carousel {
+  margin-top: clamp(26px, 4vw, 48px);
+}
+
+/* Toolkit cards use the same carousel proportions as project cards. */
+.mobile-tool-carousel .toolkit-card {
+  min-height: clamp(230px, 25vw, 320px);
+  padding: clamp(22px, 3vw, 36px);
+  border: 1px solid rgba(255, 255, 255, .13);
+  background: rgba(255, 255, 255, .025);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 18px;
+  scroll-snap-align: center;
+}
+
+.mobile-tool-carousel .toolkit-card > span {
+  font-size: 11px;
+  opacity: .6;
+}
+
+.mobile-tool-carousel .toolkit-card h3 {
+  font-size: clamp(17px, 2vw, 23px);
+  letter-spacing: .04em;
+}
+
+.mobile-tool-carousel .toolkit-card p {
+  font-size: clamp(12px, 1.2vw, 15px);
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+
+/* Desktop: larger, editorial cards with visible neighbouring previews. */
+@media (min-width: 1100px) {
+  .mobile-carousel {
+    --carousel-card-width: min(68vw, 720px);
+    padding-left: max(14vw, calc((100vw - 1120px) / 2));
+    padding-right: max(14vw, calc((100vw - 1120px) / 2));
+    scroll-padding-inline: max(14vw, calc((100vw - 1120px) / 2));
+  }
+
+  .mobile-carousel > .mobile-carousel-card {
+    max-width: 720px;
+  }
+
+  .mobile-carousel .float-card-art {
+    height: clamp(320px, 34vw, 440px);
+  }
+}
+
+/* Tablet and smaller laptops. */
+@media (min-width: 701px) and (max-width: 1099px) {
+  .mobile-carousel {
+    --carousel-card-width: 76vw;
+    padding-left: 12vw;
+    padding-right: 12vw;
+    scroll-padding-inline: 12vw;
+  }
+
+  .mobile-carousel .float-card-art {
+    height: clamp(270px, 38vw, 370px);
+  }
+}
+
+/* Phone-only layout refinements: desktop layout remains unchanged. */
+@media (max-width: 700px) {
+  #home.hero {
+    min-height: auto;
+    padding: 112px 6% 76px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 34px;
+    overflow: hidden;
+  }
+
+  #home .hero-content {
+    width: 100%;
+    max-width: 100%;
+    position: relative;
+    z-index: 2;
+  }
+
+  #home .hero-kicker {
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    margin-bottom: 22px;
+  }
+
+  #home.hero h1 {
+    font-size: clamp(39px, 11.2vw, 66px);
+    line-height: .98;
+    letter-spacing: -.065em;
+    overflow-wrap: anywhere;
+  }
+
+  #home .hero-line-wrap {
+    overflow: hidden;
+  }
+
+  #home .hero-description {
+    max-width: 34rem;
+    width: 100%;
+    margin-top: 24px;
+    font-size: 14px;
+    line-height: 1.8;
+  }
+
+  #home .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 11px;
+    margin-top: 25px;
+  }
+
+  #home .hero-social {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    margin-top: 24px;
+  }
+
+  #home .hero-visual {
+    position: relative;
+    inset: auto;
+    width: min(100%, 390px);
+    height: auto;
+    aspect-ratio: 1 / 1;
+    margin: 0 auto;
+    transform: none;
+  }
+
+  #home .hero-artwork {
+    width: 100%;
+    height: 100%;
+    max-width: none;
+  }
+
+  #home .floating-label {
+    font-size: 8px;
+  }
+
+  #home .hero-footer {
+    position: relative;
+    inset: auto;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 4px;
+    font-size: 8px;
+  }
+
+  #home > .section,
+  #home > .contact-cta {
+    padding-left: 6%;
+    padding-right: 6%;
+    padding-top: 76px;
+    padding-bottom: 76px;
+  }
+
+  #home .section-top {
+    gap: 12px;
+    align-items: flex-start;
+    font-size: 8px;
+    line-height: 1.6;
+  }
+
+  #home .section-top span:last-child {
+    text-align: right;
+  }
+
+  #home .section-heading-row {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+    margin-top: 34px;
+  }
+
+  #home .display-heading {
+    max-width: 100%;
+    font-size: clamp(34px, 9.5vw, 52px);
+    line-height: 1.02;
+    letter-spacing: -.055em;
+  }
+
+  #home .section-heading-row > p {
+    max-width: 34rem;
+    width: 100%;
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.8;
+  }
+
+  #home .about-preview-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    margin-top: 34px;
+  }
+
+  #home .about-preview-copy {
+    width: 100%;
+    max-width: 34rem;
+  }
+
+  .mobile-carousel {
+    --carousel-card-width: 82%;
+    gap: 14px;
+    width: calc(100% + 12vw);
+    margin-left: -6vw;
+    margin-right: -6vw;
+    padding: 12px 9vw 24px;
+    scroll-padding-inline: 9vw;
+    scrollbar-width: none;
+    cursor: grab;
+  }
+
+  .mobile-carousel::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mobile-carousel > .mobile-carousel-card {
+    max-width: 390px;
+  }
+
+  .mobile-carousel .float-card-art {
+    height: clamp(220px, 66vw, 290px);
+  }
+
+  .mobile-carousel .float-card-info {
+    padding: 17px 2px 4px;
+    gap: 12px;
+  }
+
+  .mobile-carousel .float-card-info h3 {
+    font-size: 18px;
+    line-height: 1.2;
+  }
+
+  .mobile-carousel .float-card-info p {
+    font-size: 12px;
+    line-height: 1.7;
+  }
+
+  .mobile-tool-carousel .toolkit-card {
+    min-height: 190px;
+    padding: 22px;
+    gap: 15px;
+  }
+
+  .mobile-tool-carousel .toolkit-card > span {
+    font-size: 10px;
+  }
+
+  .mobile-tool-carousel .toolkit-card h3 {
+    font-size: 16px;
+  }
+
+  .mobile-tool-carousel .toolkit-card p {
+    font-size: 12px;
+  }
+
+  #home .center-action {
+    margin-top: 26px;
+  }
+
+  #home .contact-cta .cta-main {
+    padding-top: 45px;
+    padding-bottom: 20px;
+  }
+
+  #home .contact-cta .cta-main h2 {
+    font-size: clamp(39px, 11vw, 60px);
+    line-height: .98;
+  }
+}
+
+@media (max-width: 380px) {
+  .mobile-carousel {
+    --carousel-card-width: 84%;
+    gap: 11px;
+  }
+
+  #home .section-top,
+  #home .hero-footer {
+    font-size: 7px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-carousel {
+    scroll-behavior: auto;
+  }
+}

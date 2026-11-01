@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import gsap from "gsap";
@@ -41,9 +40,12 @@ const tools = [
 
 export default function Home() {
   const pageRef = useRef(null);
+  const projectCarouselRef = useRef(null);
+  const clientCarouselRef = useRef(null);
 
   const [featuredProjects, setFeaturedProjects] = useState([]);
   const [projectsLoading, setProjectsLoading] = useState(true);
+  const [toolIndex, setToolIndex] = useState(0);
 
   // Load published personal projects from Supabase.
   useEffect(() => {
@@ -107,7 +109,6 @@ export default function Home() {
         return;
       }
 
-      // HERO INTRO
       const intro = gsap.timeline({
         defaults: { ease: "power3.out" },
       });
@@ -158,7 +159,6 @@ export default function Home() {
           "-=0.5"
         );
 
-      // ROTATING ORBITS
       gsap.to(".orbit-ring", {
         rotation: 360,
         duration: 35,
@@ -166,7 +166,6 @@ export default function Home() {
         ease: "none",
       });
 
-      // FLOATING CENTRAL SPHERE
       gsap.to(".visual-core", {
         y: -10,
         duration: 3,
@@ -175,7 +174,6 @@ export default function Home() {
         ease: "sine.inOut",
       });
 
-      // FLOATING GLASS OBJECTS
       [
         ".glass-drop-one",
         ".glass-drop-two",
@@ -193,7 +191,6 @@ export default function Home() {
         });
       });
 
-      // SCROLL REVEALS
       gsap.utils.toArray(".reveal").forEach((element) => {
         gsap.from(element, {
           y: 45,
@@ -212,7 +209,7 @@ export default function Home() {
     return () => context.revert();
   }, []);
 
-  // 3D interaction for dynamically loaded project cards.
+  // 3D interaction for project cards.
   useEffect(() => {
     const page = pageRef.current;
     if (!page) return;
@@ -224,7 +221,6 @@ export default function Home() {
         if (window.matchMedia("(pointer: coarse)").matches) return;
 
         const rect = card.getBoundingClientRect();
-
         const x = (event.clientX - rect.left) / rect.width - 0.5;
         const y = (event.clientY - rect.top) / rect.height - 0.5;
 
@@ -271,6 +267,82 @@ export default function Home() {
     };
   }, [featuredProjects, projectsLoading]);
 
+  // Find the currently centred card and move one position.
+  const scrollCarousel = (ref, direction) => {
+    const carousel = ref.current;
+    if (!carousel) return;
+
+    const cards = Array.from(
+      carousel.querySelectorAll(".mobile-carousel-card")
+    );
+
+    if (!cards.length) return;
+
+    const carouselRect = carousel.getBoundingClientRect();
+    const carouselCenter =
+      carouselRect.left + carouselRect.width / 2;
+
+    let currentIndex = 0;
+    let closestDistance = Infinity;
+
+    cards.forEach((card, index) => {
+      const rect = card.getBoundingClientRect();
+      const cardCenter = rect.left + rect.width / 2;
+      const distance = Math.abs(cardCenter - carouselCenter);
+
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        currentIndex = index;
+      }
+    });
+
+    const nextIndex = Math.max(
+      0,
+      Math.min(cards.length - 1, currentIndex + direction)
+    );
+
+    const target = cards[nextIndex];
+    const targetRect = target.getBoundingClientRect();
+    const targetCenter = targetRect.left + targetRect.width / 2;
+    const offset = targetCenter - carouselCenter;
+
+    carousel.scrollTo({
+      left: carousel.scrollLeft + offset,
+      behavior: "smooth",
+    });
+  };
+
+  // Centre the first card on initial load.
+  useEffect(() => {
+    const refs = [
+      projectCarouselRef,
+      clientCarouselRef,
+    ];
+
+    const frame = requestAnimationFrame(() => {
+      refs.forEach((ref) => {
+        const carousel = ref.current;
+        const firstCard = carousel?.querySelector(
+          ".mobile-carousel-card"
+        );
+
+        if (!carousel || !firstCard) return;
+
+        const carouselRect = carousel.getBoundingClientRect();
+        const cardRect = firstCard.getBoundingClientRect();
+
+        const offset =
+          cardRect.left +
+          cardRect.width / 2 -
+          (carouselRect.left + carouselRect.width / 2);
+
+        carousel.scrollLeft += offset;
+      });
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [featuredProjects, projectsLoading]);
+
   return (
     <main ref={pageRef}>
       {/* HERO */}
@@ -285,11 +357,9 @@ export default function Home() {
             <span className="hero-line-wrap">
               <span className="hero-line">CRAFTING</span>
             </span>
-
             <span className="hero-line-wrap">
               <span className="hero-line muted">DIGITAL</span>
             </span>
-
             <span className="hero-line-wrap">
               <span className="hero-line">
                 EXPERIENCES<span className="period">.</span>
@@ -307,21 +377,15 @@ export default function Home() {
             <LiquidLink to="/projects" variant="solid">
               EXPLORE MY WORK ↗
             </LiquidLink>
-
             <LiquidLink to="/about">
               MORE ABOUT ME ↓
             </LiquidLink>
           </div>
 
           <div className="hero-social">
-            <a
-              href="https://github.com/"
-              target="_blank"
-              rel="noreferrer"
-            >
+            <a href="https://github.com/" target="_blank" rel="noreferrer">
               GH &nbsp; GITHUB ↗
             </a>
-
             <a
               href="https://www.linkedin.com/"
               target="_blank"
@@ -332,16 +396,13 @@ export default function Home() {
           </div>
         </div>
 
-        {/* HERO ARTWORK */}
         <div className="hero-visual">
           <div className="hero-artwork">
             <div className="artwork-inner">
               <div className="visual-grid" />
-
               <div className="orbit-ring ring-one" />
               <div className="orbit-ring ring-two" />
               <div className="orbit-ring ring-three" />
-
               <div className="glass-drop glass-drop-one" />
               <div className="glass-drop glass-drop-two" />
               <div className="glass-drop glass-drop-three" />
@@ -352,7 +413,6 @@ export default function Home() {
                   <span className="core-symbol">
                     A<span>.</span>
                   </span>
-
                   <span className="core-caption">
                     DESIGN / DEVELOP / CREATE
                   </span>
@@ -361,15 +421,11 @@ export default function Home() {
             </div>
 
             <div className="floating-label label-top">
-              <span>01 /</span>
-              CREATIVE THINKING
+              <span>01 /</span> CREATIVE THINKING
             </div>
-
             <div className="floating-label label-bottom">
-              <span>02 /</span>
-              BUILDING IDEAS
+              <span>02 /</span> BUILDING IDEAS
             </div>
-
             <div className="visual-index">
               FIG. 001 — LIQUID FORM
             </div>
@@ -401,27 +457,22 @@ export default function Home() {
 
           <div className="about-preview-copy reveal">
             <p className="eyebrow">HELLO, I'M ADITYA.</p>
-
             <p>
               I'm a Computer Science student exploring the
               intersection of development, design and visual
               storytelling.
             </p>
-
             <p>
               I like understanding how things work, learning
               new tools and turning ideas into experiences
               people can actually use.
             </p>
-
-            <LiquidLink to="/about">
-              MORE ABOUT ME ↗
-            </LiquidLink>
+            <LiquidLink to="/about">MORE ABOUT ME ↗</LiquidLink>
           </div>
         </div>
       </section>
 
-      {/* PERSONAL PROJECTS — LIVE FROM SUPABASE */}
+      {/* PERSONAL PROJECTS */}
       <section className="section home-work">
         <div className="section-top reveal">
           <span>02 / PERSONAL PROJECTS</span>
@@ -434,7 +485,6 @@ export default function Home() {
             <br />
             <em>IN THE WORKS.</em>
           </h2>
-
           <p>
             Ideas, experiments and projects that are part
             of my development journey.
@@ -442,69 +492,84 @@ export default function Home() {
         </div>
 
         {projectsLoading ? (
-          <p className="home-project-loading">
-            LOADING PROJECTS...
-          </p>
+          <p className="home-project-loading">LOADING PROJECTS...</p>
         ) : featuredProjects.length > 0 ? (
-          <div className="featured-grid">
-            {featuredProjects.map((project, index) => (
-              <Link
-                to={`/projects/${project.slug}`}
-                className={`float-card home-dynamic-project-card ${
-                  index % 2 === 0 ? "levelup-visual" : "web-visual"
-                }`}
-                key={project.id}
-                aria-label={`View ${project.title} project`}
-              >
-                <div className="float-card-art">
-                  {project.cover_image_url && (
-                    <img
-                      className="home-project-cover"
-                      src={project.cover_image_url}
-                      alt={`${project.title} cover`}
-                      loading="lazy"
-                    />
-                  )}
+          <div className="home-carousel-stage">
+            <button
+              className="carousel-arrow carousel-arrow-prev"
+              type="button"
+              aria-label="Previous personal project"
+              disabled={featuredProjects.length < 2}
+              onClick={() => scrollCarousel(projectCarouselRef, -1)}
+            >
+              ←
+            </button>
 
-                  <div className="home-project-shade" />
+            <div
+              className="featured-grid mobile-carousel mobile-project-carousel"
+              ref={projectCarouselRef}
+            >
+              {featuredProjects.map((project, index) => (
+                <Link
+                  to={`/projects/${project.slug}`}
+                  className={`float-card mobile-carousel-card home-dynamic-project-card ${
+                    index % 2 === 0 ? "levelup-visual" : "web-visual"
+                  }`}
+                  key={project.id}
+                  aria-label={`View ${project.title} project`}
+                >
+                  <div className="float-card-art">
+                    {project.cover_image_url && (
+                      <img
+                        className="home-project-cover"
+                        src={project.cover_image_url}
+                        alt={`${project.title} cover`}
+                        loading="lazy"
+                      />
+                    )}
 
-                  <span className="card-number">
-                    {String(index + 1).padStart(2, "0")} / FEATURED
-                  </span>
-
-                  <div className="card-art-type">
-                    {project.title}
-                    <small>{project.category}</small>
-                  </div>
-
-                  <span className="card-art-footer">
-                    PERSONAL PROJECT / ADI
-                  </span>
-
-                  <span className="project-art-symbol">
-                    {index % 2 === 0 ? "↗" : "◈"}
-                  </span>
-
-                  <span className="home-project-status">
-                    {project.status}
-                  </span>
-                </div>
-
-                <div className="float-card-info">
-                  <div>
-                    <span className="eyebrow">
-                      {project.category}
+                    <div className="home-project-shade" />
+                    <span className="card-number">
+                      {String(index + 1).padStart(2, "0")} / FEATURED
                     </span>
 
-                    <h3>{project.title}</h3>
+                    <div className="card-art-type">
+                      {project.title}
+                      <small>{project.category}</small>
+                    </div>
 
-                    <p>{project.description}</p>
+                    <span className="card-art-footer">
+                      PERSONAL PROJECT / ADI
+                    </span>
+                    <span className="project-art-symbol">
+                      {index % 2 === 0 ? "↗" : "◈"}
+                    </span>
+                    <span className="home-project-status">
+                      {project.status}
+                    </span>
                   </div>
 
-                  <span className="card-arrow">↗</span>
-                </div>
-              </Link>
-            ))}
+                  <div className="float-card-info">
+                    <div>
+                      <span className="eyebrow">{project.category}</span>
+                      <h3>{project.title}</h3>
+                      <p>{project.description}</p>
+                    </div>
+                    <span className="card-arrow">↗</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            <button
+              className="carousel-arrow carousel-arrow-next"
+              type="button"
+              aria-label="Next personal project"
+              disabled={featuredProjects.length < 2}
+              onClick={() => scrollCarousel(projectCarouselRef, 1)}
+            >
+              →
+            </button>
           </div>
         ) : (
           <p className="home-project-loading">
@@ -519,7 +584,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* SELECTED CLIENT WORK */}
+      {/* CLIENT WORK */}
       <section className="section client-work-preview">
         <div className="section-top reveal">
           <span>03 / SELECTED CLIENT WORK</span>
@@ -532,7 +597,6 @@ export default function Home() {
             <br />
             <em>OTHERS.</em>
           </h2>
-
           <p>
             A selection of work created through collaboration,
             turning other people's ideas and requirements
@@ -540,50 +604,67 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="featured-grid">
-          {clientWorks.map((project) => (
-            <Link
-              to="/client-work/bone-jam"
-              className={`float-card ${project.visual}`}
-              key={project.number}
-              aria-label="View Bone Jam case study"
-            >
-              <div className="float-card-art">
-                <span className="card-number">
-                  {project.number} / CLIENT WORK
-                </span>
+        <div className="home-carousel-stage">
+          <button
+            className="carousel-arrow carousel-arrow-prev"
+            type="button"
+            aria-label="Previous client project"
+            disabled={clientWorks.length < 2}
+            onClick={() => scrollCarousel(clientCarouselRef, -1)}
+          >
+            ←
+          </button>
 
-                <div className="card-art-type">
-                  BONE JAM
-                  <small>CUSTOM MINECRAFT CREATIONS</small>
-                </div>
-
-                <span className="card-art-footer">
-                  COLLABORATION / ADI
-                </span>
-
-                <span className="project-art-symbol">
-                  {project.symbol}
-                </span>
-              </div>
-
-              <div className="float-card-info">
-                <div>
-                  <span className="eyebrow">
-                    {project.category}
+          <div
+            className="featured-grid mobile-carousel mobile-client-carousel"
+            ref={clientCarouselRef}
+          >
+            {clientWorks.map((project) => (
+              <Link
+                to="/client-work/bone-jam"
+                className={`float-card mobile-carousel-card ${project.visual}`}
+                key={project.number}
+                aria-label="View Bone Jam case study"
+              >
+                <div className="float-card-art">
+                  <span className="card-number">
+                    {project.number} / CLIENT WORK
                   </span>
-
-                  <h3>BONE JAM</h3>
-
-                  <p>{project.description}</p>
+                  <div className="card-art-type">
+                    BONE JAM
+                    <small>CUSTOM MINECRAFT CREATIONS</small>
+                  </div>
+                  <span className="card-art-footer">
+                    COLLABORATION / ADI
+                  </span>
+                  <span className="project-art-symbol">
+                    {project.symbol}
+                  </span>
                 </div>
 
-                <span className="card-arrow" aria-hidden="true">
-                  ↗
-                </span>
-              </div>
-            </Link>
-          ))}
+                <div className="float-card-info">
+                  <div>
+                    <span className="eyebrow">{project.category}</span>
+                    <h3>BONE JAM</h3>
+                    <p>{project.description}</p>
+                  </div>
+                  <span className="card-arrow" aria-hidden="true">
+                    ↗
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          <button
+            className="carousel-arrow carousel-arrow-next"
+            type="button"
+            aria-label="Next client project"
+            disabled={clientWorks.length < 2}
+            onClick={() => scrollCarousel(clientCarouselRef, 1)}
+          >
+            →
+          </button>
         </div>
 
         <div className="center-action reveal">
@@ -606,21 +687,64 @@ export default function Home() {
             <br />
             <em>TOOLKIT.</em>
           </h2>
-
           <p>
             Technologies and creative tools I'm learning
             and exploring.
           </p>
         </div>
 
-        <div className="tool-grid reveal">
-          {tools.map((tool) => (
-            <div key={tool.number}>
-              <span>{tool.number}</span>
-              <h3>{tool.title}</h3>
-              <p>{tool.description}</p>
+        <div className="home-carousel-stage toolkit-carousel-stage">
+          <button
+            className="carousel-arrow carousel-arrow-prev"
+            type="button"
+            aria-label="Previous toolkit category"
+            onClick={() =>
+              setToolIndex((previous) =>
+                (previous - 1 + tools.length) % tools.length
+              )
+            }
+          >
+            ←
+          </button>
+
+          <div className="toolkit-carousel-viewport">
+            <div className="toolkit-carousel-track">
+              {tools.map((tool, index) => {
+                const position =
+                  (index - toolIndex + tools.length) % tools.length;
+
+                const positionClass =
+                  position === 0
+                    ? "active"
+                    : position === 1
+                    ? "next"
+                    : "previous";
+
+                return (
+                  <article
+                    className={`toolkit-slide ${positionClass}`}
+                    key={tool.number}
+                    aria-hidden={position !== 0}
+                  >
+                    <span>{tool.number}</span>
+                    <h3>{tool.title}</h3>
+                    <p>{tool.description}</p>
+                  </article>
+                );
+              })}
             </div>
-          ))}
+          </div>
+
+          <button
+            className="carousel-arrow carousel-arrow-next"
+            type="button"
+            aria-label="Next toolkit category"
+            onClick={() =>
+              setToolIndex((previous) => (previous + 1) % tools.length)
+            }
+          >
+            →
+          </button>
         </div>
       </section>
 
@@ -635,13 +759,11 @@ export default function Home() {
           <p className="eyebrow">
             GOOD IDEAS START WITH A CONVERSATION.
           </p>
-
           <h2>
             LET'S MAKE
             <br />
             <em>IT HAPPEN.</em>
           </h2>
-
           <LiquidLink to="/contact" variant="solid">
             LET'S TALK ↗
           </LiquidLink>

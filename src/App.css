@@ -9428,88 +9428,315 @@ a:focus-visible {
   .services-notes-content {
     padding: 25px;
   }
-}/* =========================================
-   CONTACT PAGE — PACKAGE ENQUIRY
-========================================= */
-
-.contact-selection-section {
-  padding-top: 0;
 }
 
-.contact-selection {
+
+
+/* ==========================================
+   TOOLKIT — INFINITE THREE CARD CAROUSEL
+========================================== */
+
+main > .home-expertise .toolkit-carousel-stage {
+  position: relative;
+  width: 100%;
+  height: 270px;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 25px;
-  padding: 30px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.035);
-}
-
-.contact-selection h2 {
-  margin: 15px 0 8px;
-  font-size: clamp(25px, 4vw, 42px);
-  letter-spacing: -0.05em;
-}
-
-.contact-selection p {
-  font-size: 11px;
-  letter-spacing: 0.13em;
-  color: var(--muted, #999);
-}
-
-.contact-selection-status {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 9px;
-  letter-spacing: 0.12em;
-  color: var(--muted, #999);
-}
-
-.contact-selection-status span {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #9cc9a5;
-  box-shadow: 0 0 12px rgba(156, 201, 165, 0.5);
-}
-
-.contact-method {
-  transition: background 0.35s ease, border-color 0.35s ease;
-}
-
-.contact-method:hover .contact-arrow {
-  transform: translate(5px, -5px);
-}
-
-.contact-arrow {
-  transition: transform 0.35s ease;
-}
-
-.contact-email-cta {
-  display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-top: 25px;
-  padding: 16px 25px;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  color: var(--text, #fff);
-  text-decoration: none;
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  transition: background 0.3s ease, color 0.3s ease;
+  overflow: hidden;
 }
 
-.contact-email-cta:hover {
-  background: var(--text, #fff);
-  color: var(--background, #111);
+main > .home-expertise .toolkit-carousel-viewport {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
 }
 
-@media (max-width: 600px) {
-  .contact-selection {
-    flex-direction: column;
-    align-items: flex-start;
+main > .home-expertise .toolkit-carousel-track {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+main > .home-expertise .toolkit-slide {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+
+  width: min(62vw, 720px);
+  min-height: 175px;
+  box-sizing: border-box;
+  padding: 35px;
+
+  border: 1px solid rgba(255,255,255,.14);
+  background: #101010;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 16px;
+
+  transition:
+    transform .65s cubic-bezier(.22,1,.36,1),
+    opacity .5s ease,
+    filter .5s ease;
+
+  transform: translate(-50%, -50%) scale(.78);
+  opacity: .35;
+  filter: brightness(.55);
+  pointer-events: none;
+}
+
+/* Previous card */
+main > .home-expertise .toolkit-slide.previous {
+  transform: translate(calc(-50% - 53vw), -50%) scale(.78);
+  opacity: .5;
+}
+
+/* Active card */
+main > .home-expertise .toolkit-slide.active {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+  filter: brightness(1);
+  z-index: 3;
+  pointer-events: auto;
+  border-color: rgba(255,255,255,.3);
+}
+
+/* Next card */
+main > .home-expertise .toolkit-slide.next {
+  transform: translate(calc(-50% + 53vw), -50%) scale(.78);
+  opacity: .5;
+}
+
+/* Card typography */
+main > .home-expertise .toolkit-slide > span {
+  font-size: 12px;
+  color: #777;
+  font-family: monospace;
+}
+
+main > .home-expertise .toolkit-slide h3 {
+  font-size: 20px;
+  color: #fff;
+  margin: 0;
+}
+
+main > .home-expertise .toolkit-slide p {
+  font-size: 14px;
+  color: #888;
+  margin: 0;
+}
+
+/* Navigation */
+main > .home-expertise .toolkit-carousel-stage .carousel-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 5;
+  transform: translateY(-50%);
+}
+
+main > .home-expertise .toolkit-carousel-stage .carousel-arrow-prev {
+  left: 5%;
+}
+
+main > .home-expertise .toolkit-carousel-stage .carousel-arrow-next {
+  right: 5%;
+}
+
+/* Mobile */
+@media (max-width: 700px) {
+  main > .home-expertise .toolkit-carousel-stage {
+    height: 240px;
+  }
+
+  main > .home-expertise .toolkit-slide {
+    width: 72vw;
+    min-height: 155px;
     padding: 22px;
+  }
+
+  main > .home-expertise .toolkit-slide.previous {
+    transform: translate(calc(-50% - 66vw), -50%) scale(.75);
+  }
+
+  main > .home-expertise .toolkit-slide.next {
+    transform: translate(calc(-50% + 66vw), -50%) scale(.75);
+  }
+
+  main > .home-expertise .toolkit-carousel-stage .carousel-arrow-prev {
+    left: 2%;
+  }
+
+  main > .home-expertise .toolkit-carousel-stage .carousel-arrow-next {
+    right: 2%;
+  }
+}
+/* =========================================
+   HOMEPAGE CAROUSEL — FINAL POSITIONING
+   ========================================= */
+
+/* Carousel wrapper */
+.home-carousel-stage {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 76px;
+  box-sizing: border-box;
+}
+
+/* Carousel track */
+.home-carousel-stage .mobile-carousel {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  min-width: 0;
+  gap: 36px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.home-carousel-stage .mobile-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+/* Individual cards */
+.home-carousel-stage .mobile-carousel-card {
+  flex: 0 0 72%;
+  max-width: 950px;
+  min-width: 0;
+  scroll-snap-align: center;
+  transition:
+    transform 0.5s ease,
+    opacity 0.5s ease;
+}
+
+/* SINGLE ITEM: always centre it */
+.home-carousel-stage .mobile-carousel:has(
+  > .mobile-carousel-card:only-child
+) {
+  justify-content: center;
+  overflow-x: hidden;
+}
+
+.home-carousel-stage .mobile-carousel:has(
+  > .mobile-carousel-card:only-child
+) .mobile-carousel-card {
+  flex: 0 1 950px;
+  width: 100%;
+  max-width: 950px;
+  margin-inline: auto;
+}
+
+/* Arrow buttons */
+.home-carousel-stage .carousel-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 10;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 54px;
+  height: 54px;
+  min-width: 54px;
+  padding: 0;
+
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+
+  background: rgba(255, 255, 255, 0.035);
+  color: #fff;
+
+  font-family: inherit;
+  font-size: 24px;
+  line-height: 1;
+
+  cursor: pointer;
+  transform: translateY(-50%);
+
+  transition:
+    background 0.3s ease,
+    border-color 0.3s ease,
+    color 0.3s ease,
+    transform 0.3s ease,
+    opacity 0.3s ease;
+}
+
+/* Previous arrow: left side */
+.home-carousel-stage .carousel-arrow-prev {
+  left: 0;
+  right: auto;
+}
+
+/* Next arrow: right side */
+.home-carousel-stage .carousel-arrow-next {
+  right: 0;
+  left: auto;
+}
+
+/* Hover effect */
+.home-carousel-stage .carousel-arrow:not(:disabled):hover {
+  background: #fff;
+  color: #080808;
+  border-color: #fff;
+  transform: translateY(-50%) scale(1.08);
+}
+
+/* Disabled arrows */
+.home-carousel-stage .carousel-arrow:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Keep single cards away from arrow buttons */
+.home-carousel-stage:has(
+  > .mobile-carousel:has(> .mobile-carousel-card:only-child)
+) {
+  padding-left: 76px;
+  padding-right: 76px;
+}
+
+/* Mobile */
+@media (max-width: 700px) {
+  .home-carousel-stage {
+    padding: 20px 48px;
+  }
+
+  .home-carousel-stage .mobile-carousel {
+    gap: 18px;
+  }
+
+  .home-carousel-stage .mobile-carousel-card {
+    flex-basis: 88%;
+  }
+
+  .home-carousel-stage .carousel-arrow {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    font-size: 18px;
+  }
+
+  .home-carousel-stage:has(
+    > .mobile-carousel:has(> .mobile-carousel-card:only-child)
+  ) {
+    padding-left: 48px;
+    padding-right: 48px;
+  }
+
+  .home-carousel-stage .mobile-carousel:has(
+    > .mobile-carousel-card:only-child
+  ) .mobile-carousel-card {
+    flex-basis: 100%;
   }
 }
