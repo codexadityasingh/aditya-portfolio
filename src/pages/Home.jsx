@@ -4,6 +4,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import LiquidLink from "../components/LiquidLink";
 import { supabase } from "../lib/supabase";
+import { DEFAULT_SITE_CONTENT, getSiteContent } from "../lib/siteContent";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -20,36 +21,60 @@ const clientWorks = [
   },
 ];
 
-const tools = [
-  {
-    number: "01",
-    title: "DEVELOPMENT",
-    description: "React · JavaScript · Java · Spring Boot · Python",
-  },
-  {
-    number: "02",
-    title: "DATA",
-    description: "SQL · MySQL · Excel · Pandas",
-  },
-  {
-    number: "03",
-    title: "CREATIVE",
-    description: "DaVinci Resolve · Lightroom · Photography",
-  },
-];
-
 export default function Home() {
   const pageRef = useRef(null);
   const projectCarouselRef = useRef(null);
   const clientCarouselRef = useRef(null);
   const toolkitViewportRef = useRef(null);
-  const toolkitDrag = useRef({ active: false, startX: 0, lastX: 0, pointerId: null });
+  const toolkitDrag = useRef({
+    active: false,
+    startX: 0,
+    lastX: 0,
+    pointerId: null,
+  });
+
   const [toolkitDragX, setToolkitDragX] = useState(0);
   const [toolkitIsDragging, setToolkitIsDragging] = useState(false);
 
   const [featuredProjects, setFeaturedProjects] = useState([]);
   const [projectsLoading, setProjectsLoading] = useState(true);
   const [toolIndex, setToolIndex] = useState(0);
+  const [toolkitCategories, setToolkitCategories] = useState(
+    DEFAULT_SITE_CONTENT.explore.tools
+  );
+
+  const tools = toolkitCategories;
+
+  // Load toolkit categories from the same Explore content record used by the admin page.
+  useEffect(() => {
+    let active = true;
+
+    const loadToolkit = async () => {
+      try {
+        const saved = await getSiteContent("explore");
+        if (!active) return;
+
+        const categories = Array.isArray(saved?.tools)
+          ? saved.tools
+          : DEFAULT_SITE_CONTENT.explore.tools;
+
+        setToolkitCategories(categories);
+        setToolIndex(0);
+      } catch (error) {
+        console.error("Unable to load homepage toolkit:", error);
+
+        if (active) {
+          setToolkitCategories(DEFAULT_SITE_CONTENT.explore.tools);
+        }
+      }
+    };
+
+    loadToolkit();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Load published personal projects from Supabase.
   useEffect(() => {
@@ -393,7 +418,6 @@ export default function Home() {
       pointerId: event.pointerId,
     };
     setToolkitIsDragging(true);
-    event.currentTarget.setPointerCapture?.(event.pointerId);
   };
 
   const handleToolkitPointerMove = (event) => {
@@ -406,13 +430,20 @@ export default function Home() {
   const finishToolkitDrag = () => {
     if (!toolkitDrag.current.active) return;
     const delta = toolkitDrag.current.lastX - toolkitDrag.current.startX;
-    const viewportWidth = toolkitViewportRef.current?.getBoundingClientRect().width || window.innerWidth;
+    const viewportWidth =
+      toolkitViewportRef.current?.getBoundingClientRect().width ||
+      window.innerWidth;
     const snapDistance = viewportWidth * 0.18;
+
     if (Math.abs(delta) > snapDistance) {
-      setToolIndex((previous) => delta < 0
-        ? (previous + 1) % tools.length
-        : (previous - 1 + tools.length) % tools.length);
+      setToolIndex((previous) =>
+        delta < 0
+          ? (previous + 1) % Math.max(tools.length, 1)
+          : (previous - 1 + Math.max(tools.length, 1)) %
+            Math.max(tools.length, 1)
+      );
     }
+
     toolkitDrag.current.active = false;
     setToolkitDragX(0);
     setToolkitIsDragging(false);
@@ -422,9 +453,20 @@ export default function Home() {
   // A strong swipe moves one item only; a short quiet period rearms the next swipe.
   useEffect(() => {
     const carousels = [
-      { element: projectCarouselRef.current, type: "scroll", ref: projectCarouselRef },
-      { element: clientCarouselRef.current, type: "scroll", ref: clientCarouselRef },
-      { element: toolkitViewportRef.current, type: "toolkit" },
+      {
+        element: projectCarouselRef.current,
+        type: "scroll",
+        ref: projectCarouselRef,
+      },
+      {
+        element: clientCarouselRef.current,
+        type: "scroll",
+        ref: clientCarouselRef,
+      },
+      {
+        element: toolkitViewportRef.current,
+        type: "toolkit",
+      },
     ].filter((item) => item.element);
 
     const cleanups = [];
@@ -468,7 +510,8 @@ export default function Home() {
 
         if (type === "toolkit") {
           setToolIndex((current) =>
-            (current + direction + tools.length) % tools.length
+            (current + direction + Math.max(tools.length, 1)) %
+            Math.max(tools.length, 1)
           );
         } else {
           scrollCarousel(ref, direction);
@@ -484,7 +527,7 @@ export default function Home() {
     });
 
     return () => cleanups.forEach((cleanup) => cleanup());
-  }, [featuredProjects, projectsLoading]);
+  }, [featuredProjects, projectsLoading, toolkitCategories]);
 
   // Centre the first card on initial load.
   useEffect(() => {
@@ -862,83 +905,139 @@ export default function Home() {
             <em>TOOLKIT.</em>
           </h2>
           <p>
-            Technologies and creative tools I'm learning
-            and exploring.
+            Technologies and creative tools I currently use,
+            learn and explore.
           </p>
         </div>
 
-        <div className="home-carousel-stage toolkit-carousel-stage">
-          <button
-            className="carousel-arrow carousel-arrow-prev"
-            type="button"
-            aria-label="Previous toolkit category"
-            onClick={() =>
-              setToolIndex((previous) =>
-                (previous - 1 + tools.length) % tools.length
-              )
-            }
-          >
-            ←
-          </button>
+        {tools.length > 0 ? (
+          <div className="home-carousel-stage toolkit-carousel-stage">
+            <button
+              className="carousel-arrow carousel-arrow-prev"
+              type="button"
+              aria-label="Previous toolkit category"
+              onClick={() =>
+                setToolIndex((previous) =>
+                  (previous - 1 + Math.max(tools.length, 1)) %
+                  Math.max(tools.length, 1)
+                )
+              }
+            >
+              ←
+            </button>
 
-          <div
-            className="toolkit-carousel-viewport"
-            ref={toolkitViewportRef}
-            onPointerDown={handleToolkitPointerDown}
-            onPointerMove={handleToolkitPointerMove}
-            onPointerUp={finishToolkitDrag}
-            onPointerCancel={finishToolkitDrag}
-            onLostPointerCapture={finishToolkitDrag}
-            style={{ touchAction: "pan-y", cursor: toolkitIsDragging ? "grabbing" : "grab" }}
-          >
-            <div className="toolkit-carousel-track">
-              {tools.map((tool, index) => {
-                const position =
-                  (index - toolIndex + tools.length) % tools.length;
+            <div
+              className="toolkit-carousel-viewport"
+              ref={toolkitViewportRef}
+              onPointerDown={handleToolkitPointerDown}
+              onPointerMove={handleToolkitPointerMove}
+              onPointerUp={finishToolkitDrag}
+              onPointerCancel={finishToolkitDrag}
+              onLostPointerCapture={finishToolkitDrag}
+              style={{
+                touchAction: "pan-y",
+                cursor: toolkitIsDragging ? "grabbing" : "grab",
+              }}
+            >
+              <div className="toolkit-carousel-track">
+                {tools.map((tool, index) => {
+                  const total = tools.length;
 
-                const positionClass =
-                  position === 0
+                  const position = total
+                    ? (index - toolIndex + total) % total
+                    : 0;
+
+                  const isActive = position === 0;
+                  const isNext = position === 1;
+                  const isPrevious = position === total - 1 && total > 1;
+                  const isVisible = isActive || isNext || isPrevious;
+
+                  const positionClass = isActive
                     ? "active"
-                    : position === 1
+                    : isNext
                     ? "next"
                     : "previous";
-                const signedPosition = position === 0 ? 0 : position === 1 ? 1 : -1;
-                const spacing = typeof window !== "undefined" && window.innerWidth <= 700 ? 105 : 53;
-                const offset = `calc(${signedPosition * spacing}vw + ${toolkitDragX}px)`;
-                const scale = position === 0 ? 1 : 0.78;
-                const opacity = position === 0 ? 1 : 0.5;
 
-                return (
-                  <article
-                    className={`toolkit-slide ${positionClass}${toolkitIsDragging ? " is-dragging" : ""}`}
-                    style={{
-                      transform: `translate(calc(-50% + ${offset}), -50%) scale(${scale})`,
-                      opacity,
-                      transition: toolkitIsDragging ? "none" : undefined,
-                    }}
-                    key={tool.number}
-                    aria-hidden={position !== 0}
-                  >
-                    <span>{tool.number}</span>
-                    <h3>{tool.title}</h3>
-                    <p>{tool.description}</p>
-                  </article>
-                );
-              })}
+                  const signedPosition = isActive
+                    ? 0
+                    : isNext
+                    ? 1
+                    : -1;
+
+                  const spacing =
+                    typeof window !== "undefined" &&
+                    window.innerWidth <= 700
+                      ? 105
+                      : 53;
+
+                  const offset = `calc(${signedPosition * spacing}vw + ${toolkitDragX}px)`;
+                  const scale = isActive ? 1 : 0.78;
+                  const opacity = isActive ? 1 : isVisible ? 0.5 : 0;
+
+                  const toolNames = (tool.tools || [])
+                    .map((item) => item.name)
+                    .filter(Boolean)
+                    .join(" · ");
+
+                  return (
+                    <a
+                      href="/explore#toolkit"
+                      className={`toolkit-slide ${positionClass}${
+                        toolkitIsDragging ? " is-dragging" : ""
+                      }`}
+                      style={{
+                        transform: `translate(calc(-50% + ${offset}), -50%) scale(${scale})`,
+                        opacity,
+                        visibility: isVisible ? "visible" : "hidden",
+                        pointerEvents: isVisible ? "auto" : "none",
+                        transition: toolkitIsDragging ? "none" : undefined,
+                        zIndex: isActive ? 5 : 1,
+                      }}
+                      key={tool.id || `${tool.number}-${index}`}
+                      aria-hidden={!isActive}
+                      tabIndex={isActive ? 0 : -1}
+                    >
+                      <span>
+                        {tool.number ||
+                          String(index + 1).padStart(2, "0")}
+                      </span>
+
+                      <h3>{tool.title}</h3>
+
+                      <p>
+                        {toolNames ||
+                          tool.description ||
+                          "Explore this toolkit category."}
+                      </p>
+
+                      <small className="toolkit-explore-hint">
+                        EXPLORE TOOLKIT ↗
+                      </small>
+                    </a>
+                  );
+                })}
+              </div>
             </div>
-          </div>
 
-          <button
-            className="carousel-arrow carousel-arrow-next"
-            type="button"
-            aria-label="Next toolkit category"
-            onClick={() =>
-              setToolIndex((previous) => (previous + 1) % tools.length)
-            }
-          >
-            →
-          </button>
-        </div>
+            <button
+              className="carousel-arrow carousel-arrow-next"
+              type="button"
+              aria-label="Next toolkit category"
+              onClick={() =>
+                setToolIndex(
+                  (previous) =>
+                    (previous + 1) % Math.max(tools.length, 1)
+                )
+              }
+            >
+              →
+            </button>
+          </div>
+        ) : (
+          <p className="home-project-loading">
+            TOOLKIT DETAILS COMING SOON.
+          </p>
+        )}
       </section>
 
       {/* CONTACT CTA */}

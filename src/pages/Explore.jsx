@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from "react";
 import LiquidLink from "../components/LiquidLink";
 import usePageMotion from "../hooks/usePageMotion";
@@ -17,12 +16,26 @@ function mergeExploreContent(saved) {
   return {
     ...defaults,
     ...saved,
-
     hero: {
       ...defaults.hero,
       ...(saved.hero || {}),
     },
-
+    tools: Array.isArray(saved.tools)
+      ? saved.tools.map((category, index) => ({
+          ...category,
+          id: category.id || `category-${index}`,
+          number: category.number || String(index + 1).padStart(2, "0"),
+          title: category.title || "UNTITLED CATEGORY",
+          description: category.description || "",
+          tools: Array.isArray(category.tools)
+            ? category.tools.map((tool) => ({
+                name: tool.name || "",
+                status: tool.status || "EXPLORING",
+                note: tool.note || "",
+              }))
+            : [],
+        }))
+      : defaults.tools,
     services: Array.isArray(saved.services)
       ? saved.services.map((service) => ({
           ...service,
@@ -36,7 +49,6 @@ function mergeExploreContent(saved) {
             : [],
         }))
       : defaults.services,
-
     custom: {
       ...defaults.custom,
       ...(saved.custom || {}),
@@ -44,15 +56,12 @@ function mergeExploreContent(saved) {
         ? saved.custom.paragraphs
         : defaults.custom.paragraphs,
     },
-
     addOns: Array.isArray(saved.addOns)
       ? saved.addOns
       : defaults.addOns,
-
     process: Array.isArray(saved.process)
       ? saved.process
       : defaults.process,
-
     notes: {
       ...defaults.notes,
       ...(saved.notes || {}),
@@ -60,7 +69,6 @@ function mergeExploreContent(saved) {
         ? saved.notes.paragraphs
         : defaults.notes.paragraphs,
     },
-
     ending: {
       ...defaults.ending,
       ...(saved.ending || {}),
@@ -91,11 +99,8 @@ export default function Explore() {
         if (!mounted) return;
 
         const updatedContent = mergeExploreContent(saved);
-
         setContent(updatedContent);
 
-        // Keep the selected service valid if services were renamed,
-        // removed or reordered in the admin panel.
         setActiveService((current) => {
           const stillExists = updatedContent.services.some(
             (service) => service.id === current
@@ -128,6 +133,7 @@ export default function Explore() {
   const {
     hero,
     services,
+    tools,
     custom,
     addOns,
     process,
@@ -144,6 +150,85 @@ export default function Explore() {
       className="inner-page explore-page services-page"
       ref={pageRef}
     >
+      <style>{`
+        .explore-toolkit-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 16px;
+          margin-top: 35px;
+        }
+        .explore-toolkit-card {
+          min-width: 0;
+          padding: 25px;
+          border: 1px solid rgba(255,255,255,.12);
+          background: rgba(255,255,255,.018);
+        }
+        .explore-toolkit-card-top {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          padding-bottom: 18px;
+          border-bottom: 1px solid rgba(255,255,255,.1);
+          color: #b9a17b;
+          font-size: 9px;
+          letter-spacing: 1.5px;
+        }
+        .explore-toolkit-card h3 {
+          margin: 25px 0 10px;
+          font-size: 23px;
+          font-weight: 400;
+          letter-spacing: -.7px;
+        }
+        .explore-toolkit-description {
+          min-height: 42px;
+          color: #888;
+          font-size: 12px;
+          line-height: 1.7;
+        }
+        .explore-toolkit-list {
+          margin-top: 22px;
+        }
+        .explore-toolkit-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 12px;
+          padding: 13px 0;
+          border-top: 1px solid rgba(255,255,255,.08);
+        }
+        .explore-toolkit-item strong {
+          display: block;
+          font-size: 12px;
+          font-weight: 500;
+        }
+        .explore-toolkit-item p {
+          margin: 5px 0 0;
+          color: #777;
+          font-size: 10px;
+          line-height: 1.5;
+        }
+        .explore-toolkit-status {
+          flex-shrink: 0;
+          color: #b9a17b;
+          font-size: 8px;
+          letter-spacing: .7px;
+          text-align: right;
+        }
+        @media (max-width: 900px) {
+          .explore-toolkit-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+        }
+        @media (max-width: 600px) {
+          .explore-toolkit-grid {
+            grid-template-columns: 1fr;
+          }
+          .explore-toolkit-card {
+            padding: 19px;
+          }
+        }
+      `}</style>
+
       {/* HERO */}
       <section className="page-hero services-hero">
         <p className="eyebrow motion-reveal">
@@ -178,10 +263,74 @@ export default function Explore() {
         </div>
       )}
 
+      {/* TOOLKIT */}
+      <section className="section explore-toolkit" id="toolkit">
+        <div className="section-top motion-reveal">
+          <span>01 / MY TOOLKIT</span>
+          <span>TOOLS I USE & EXPLORE</span>
+        </div>
+
+        <div className="services-heading motion-reveal">
+          <h2 className="display-heading">
+            BUILT WITH
+            <br />
+            <em>THE RIGHT TOOLS.</em>
+          </h2>
+
+          <p>
+            A look at the technologies, platforms and creative tools
+            I currently use, learn and explore.
+          </p>
+        </div>
+
+        <div className="explore-toolkit-grid">
+          {tools.map((category, categoryIndex) => (
+            <article
+              className="explore-toolkit-card motion-reveal"
+              key={category.id || categoryIndex}
+            >
+              <div className="explore-toolkit-card-top">
+                <span>
+                  {category.number ||
+                    String(categoryIndex + 1).padStart(2, "0")}
+                </span>
+                <span>
+                  TOOLKIT / {String(categoryIndex + 1).padStart(2, "0")}
+                </span>
+              </div>
+
+              <h3>{category.title}</h3>
+
+              <p className="explore-toolkit-description">
+                {category.description}
+              </p>
+
+              <div className="explore-toolkit-list">
+                {(category.tools || []).map((tool, toolIndex) => (
+                  <div
+                    className="explore-toolkit-item"
+                    key={`${tool.name}-${toolIndex}`}
+                  >
+                    <div>
+                      <strong>{tool.name}</strong>
+                      {tool.note && <p>{tool.note}</p>}
+                    </div>
+
+                    <span className="explore-toolkit-status">
+                      {tool.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
       {/* SERVICE SELECTOR */}
       <section className="section services-catalogue">
         <div className="section-top motion-reveal">
-          <span>01 / WHAT I OFFER</span>
+          <span>02 / WHAT I OFFER</span>
           <span>SELECT A SERVICE</span>
         </div>
 
@@ -312,7 +461,7 @@ export default function Explore() {
       {/* CUSTOM WORK */}
       <section className="section services-custom">
         <div className="section-top motion-reveal">
-          <span>02 / SOMETHING DIFFERENT?</span>
+          <span>03 / SOMETHING DIFFERENT?</span>
           <span>LET'S TALK CUSTOM</span>
         </div>
 
@@ -342,7 +491,7 @@ export default function Explore() {
       {/* ADD-ONS */}
       <section className="section services-addons">
         <div className="section-top motion-reveal">
-          <span>03 / OPTIONAL EXTRAS</span>
+          <span>04 / OPTIONAL EXTRAS</span>
           <span>MAKE IT YOURS</span>
         </div>
 
@@ -379,7 +528,7 @@ export default function Explore() {
       {/* PROCESS */}
       <section className="section services-process">
         <div className="section-top motion-reveal">
-          <span>04 / HOW IT WORKS</span>
+          <span>05 / HOW IT WORKS</span>
           <span>FROM IDEA TO DELIVERY</span>
         </div>
 

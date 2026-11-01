@@ -1,4 +1,3 @@
-
 import { supabase } from "./supabase";
 
 export const DEFAULT_SITE_CONTENT = {
@@ -186,6 +185,47 @@ export const DEFAULT_SITE_CONTENT = {
             description: "More detailed image editing.",
             features: ["Advanced retouching", "Detailed colour grading", "Background cleanup", "Creative finishing", "Two revisions"],
           },
+        ],
+      },
+    ],
+    tools: [
+      {
+        id: "development",
+        number: "01",
+        title: "DEVELOPMENT",
+        description: "Building websites, applications and useful digital products.",
+        tools: [
+          { name: "React", status: "CURRENTLY USING", note: "Component-based frontend development." },
+          { name: "JavaScript", status: "CURRENTLY USING", note: "Interactive web experiences." },
+          { name: "Java", status: "LEARNING", note: "Core programming and backend development." },
+          { name: "Spring Boot", status: "LEARNING", note: "Building Java backend applications." },
+          { name: "Python", status: "CURRENTLY USING", note: "Scripting, data work and machine learning experiments." },
+          { name: "HTML & CSS", status: "CURRENTLY USING", note: "Responsive interfaces and layouts." },
+          { name: "Git & GitHub", status: "CURRENTLY USING", note: "Version control and collaboration." },
+        ],
+      },
+      {
+        id: "data",
+        number: "02",
+        title: "DATA",
+        description: "Working with data, databases and analysis.",
+        tools: [
+          { name: "SQL", status: "CURRENTLY USING", note: "Querying and managing relational data." },
+          { name: "MySQL", status: "CURRENTLY USING", note: "Relational database management." },
+          { name: "Excel", status: "CURRENTLY USING", note: "Spreadsheets and analysis." },
+          { name: "Pandas", status: "LEARNING", note: "Data cleaning and manipulation with Python." },
+        ],
+      },
+      {
+        id: "creative",
+        number: "03",
+        title: "CREATIVE",
+        description: "Creating and editing visual stories and digital experiences.",
+        tools: [
+          { name: "DaVinci Resolve", status: "CURRENTLY USING", note: "Video editing and colour grading." },
+          { name: "Lightroom", status: "LEARNING", note: "Photo editing and colour work." },
+          { name: "Figma", status: "LEARNING", note: "Interface design and prototyping." },
+          { name: "Photography", status: "EXPLORING", note: "Composition, lighting and visual storytelling." },
         ],
       },
     ],

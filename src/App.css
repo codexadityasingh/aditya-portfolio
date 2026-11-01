@@ -9756,9 +9756,6 @@ main > .home-expertise .toolkit-carousel-stage .carousel-arrow-next {
   user-select: none;
 }
 
-.home-carousel-stage .mobile-carousel.is-mouse-dragging * {
-  pointer-events: none;
-}
 
 main > .home-expertise .toolkit-carousel-viewport {
   touch-action: pan-y;
