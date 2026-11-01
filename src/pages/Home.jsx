@@ -42,6 +42,8 @@ export default function Home() {
   const pageRef = useRef(null);
   const projectCarouselRef = useRef(null);
   const clientCarouselRef = useRef(null);
+  const toolkitViewportRef = useRef(null);
+  const toolkitTouchStart = useRef(null);
 
   const [featuredProjects, setFeaturedProjects] = useState([]);
   const [projectsLoading, setProjectsLoading] = useState(true);
@@ -310,6 +312,164 @@ export default function Home() {
       left: carousel.scrollLeft + offset,
       behavior: "smooth",
     });
+  };
+
+  // Desktop mouse-drag support for the two homepage card carousels.
+  // Touch and trackpad scrolling remain native, including scroll snapping.
+  useEffect(() => {
+    const cleanups = [];
+
+    [projectCarouselRef, clientCarouselRef].forEach((ref) => {
+      const carousel = ref.current;
+      if (!carousel) return;
+
+      let pointerDown = false;
+      let startX = 0;
+      let startScrollLeft = 0;
+      let dragged = false;
+
+      const onPointerDown = (event) => {
+        if (event.pointerType !== "mouse" || event.button !== 0) return;
+        pointerDown = true;
+        dragged = false;
+        startX = event.clientX;
+        startScrollLeft = carousel.scrollLeft;
+        carousel.classList.add("is-mouse-dragging");
+      };
+
+      const onPointerMove = (event) => {
+        if (!pointerDown) return;
+        const delta = event.clientX - startX;
+        if (Math.abs(delta) > 4) dragged = true;
+        if (dragged) carousel.scrollLeft = startScrollLeft - delta;
+      };
+
+      const stopDragging = () => {
+        if (!pointerDown) return;
+        pointerDown = false;
+        carousel.classList.remove("is-mouse-dragging");
+        if (dragged) {
+          carousel.dataset.dragged = "true";
+          window.setTimeout(() => delete carousel.dataset.dragged, 0);
+        }
+      };
+
+      const preventDraggedClick = (event) => {
+        if (carousel.dataset.dragged === "true") {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      };
+
+      // Explicit trackpad support: route horizontal wheel gestures to this
+      // carousel instead of relying on browser-specific overflow handling.
+      const onWheel = (event) => {
+        const horizontalDelta = event.deltaX || (event.shiftKey ? event.deltaY : 0);
+        if (Math.abs(horizontalDelta) < 0.5) return;
+
+        event.preventDefault();
+        carousel.scrollLeft += horizontalDelta;
+      };
+
+      carousel.addEventListener("pointerdown", onPointerDown);
+      carousel.addEventListener("wheel", onWheel, { passive: false });
+      window.addEventListener("pointermove", onPointerMove);
+      window.addEventListener("pointerup", stopDragging);
+      window.addEventListener("pointercancel", stopDragging);
+      carousel.addEventListener("click", preventDraggedClick, true);
+
+      cleanups.push(() => {
+        carousel.removeEventListener("pointerdown", onPointerDown);
+        carousel.removeEventListener("wheel", onWheel);
+        window.removeEventListener("pointermove", onPointerMove);
+        window.removeEventListener("pointerup", stopDragging);
+        window.removeEventListener("pointercancel", stopDragging);
+        carousel.removeEventListener("click", preventDraggedClick, true);
+        carousel.classList.remove("is-mouse-dragging");
+      });
+    });
+
+    return () => cleanups.forEach((cleanup) => cleanup());
+  }, [featuredProjects, projectsLoading]);
+
+  // Swipe navigation for the overlapping toolkit cards.
+  useEffect(() => {
+    const viewport = toolkitViewportRef.current;
+    if (!viewport) return;
+
+    let startX = 0;
+    let startY = 0;
+    let pointerDown = false;
+
+    const onPointerDown = (event) => {
+      if (event.pointerType !== "mouse" || event.button !== 0) return;
+      pointerDown = true;
+      startX = event.clientX;
+      startY = event.clientY;
+    };
+
+    const onPointerUp = (event) => {
+      if (!pointerDown) return;
+      pointerDown = false;
+      const dx = event.clientX - startX;
+      const dy = event.clientY - startY;
+      if (Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy)) return;
+      setToolIndex((previous) =>
+        dx < 0
+          ? (previous + 1) % tools.length
+          : (previous - 1 + tools.length) % tools.length
+      );
+    };
+
+    // The toolkit is a stacked-card carousel rather than an overflow track,
+    // so handle horizontal trackpad gestures by changing the active slide.
+    let lastWheelAt = 0;
+    const onWheel = (event) => {
+      const delta = event.deltaX;
+      if (Math.abs(delta) < 8) return;
+      event.preventDefault();
+      const now = Date.now();
+      if (now - lastWheelAt < 450) return;
+      lastWheelAt = now;
+      setToolIndex((previous) =>
+        delta > 0
+          ? (previous + 1) % tools.length
+          : (previous - 1 + tools.length) % tools.length
+      );
+    };
+
+    viewport.addEventListener("pointerdown", onPointerDown);
+    viewport.addEventListener("wheel", onWheel, { passive: false });
+    window.addEventListener("pointerup", onPointerUp);
+    window.addEventListener("pointercancel", onPointerUp);
+
+    return () => {
+      viewport.removeEventListener("pointerdown", onPointerDown);
+      viewport.removeEventListener("wheel", onWheel);
+      window.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointercancel", onPointerUp);
+    };
+  }, []);
+
+  const handleToolkitTouchStart = (event) => {
+    const touch = event.touches[0];
+    if (!touch) return;
+    toolkitTouchStart.current = { x: touch.clientX, y: touch.clientY };
+  };
+
+  const handleToolkitTouchEnd = (event) => {
+    const start = toolkitTouchStart.current;
+    const touch = event.changedTouches[0];
+    if (!start || !touch) return;
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    toolkitTouchStart.current = null;
+    if (Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy)) return;
+    setToolIndex((previous) =>
+      dx < 0
+        ? (previous + 1) % tools.length
+        : (previous - 1 + tools.length) % tools.length
+    );
   };
 
   // Centre the first card on initial load.
@@ -707,7 +867,12 @@ export default function Home() {
             ←
           </button>
 
-          <div className="toolkit-carousel-viewport">
+          <div
+            className="toolkit-carousel-viewport"
+            ref={toolkitViewportRef}
+            onTouchStart={handleToolkitTouchStart}
+            onTouchEnd={handleToolkitTouchEnd}
+          >
             <div className="toolkit-carousel-track">
               {tools.map((tool, index) => {
                 const position =

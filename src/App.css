@@ -9740,3 +9740,33 @@ main > .home-expertise .toolkit-carousel-stage .carousel-arrow-next {
     flex-basis: 100%;
   }
 }
+
+/* Homepage-only drag and swipe affordances. */
+.home-carousel-stage .mobile-carousel {
+  cursor: grab;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x pan-y;
+}
+
+.home-carousel-stage .mobile-carousel.is-mouse-dragging {
+  cursor: grabbing;
+  scroll-behavior: auto;
+  scroll-snap-type: none;
+  user-select: none;
+}
+
+.home-carousel-stage .mobile-carousel.is-mouse-dragging * {
+  pointer-events: none;
+}
+
+main > .home-expertise .toolkit-carousel-viewport {
+  touch-action: pan-y;
+  cursor: grab;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .home-carousel-stage .mobile-carousel {
+    cursor: auto;
+  }
+}
