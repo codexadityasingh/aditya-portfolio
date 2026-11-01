@@ -9770,3 +9770,95 @@ main > .home-expertise .toolkit-carousel-viewport {
     cursor: auto;
   }
 }
+/* HOMEPAGE TOOLKIT — MOBILE FIX */
+@media (max-width: 700px) {
+  main > .home-expertise .toolkit-carousel-stage {
+    height: 250px;
+    overflow: hidden;
+  }
+
+  main > .home-expertise .toolkit-carousel-viewport {
+    width: 100%;
+    overflow: hidden;
+  }
+
+  main > .home-expertise .toolkit-slide {
+    width: 78vw;
+    max-width: 340px;
+    padding: 22px;
+  }
+
+  main > .home-expertise .toolkit-slide > span {
+    font-size: 10px;
+    line-height: 1.5;
+  }
+
+  main > .home-expertise .toolkit-slide h3 {
+    font-size: 17px;
+    line-height: 1.3;
+    overflow-wrap: break-word;
+  }
+
+  main > .home-expertise .toolkit-slide p {
+    font-size: 12px;
+    line-height: 1.7;
+  }
+
+  main > .home-expertise .toolkit-slide.previous {
+    transform: translate(calc(-50% - 78vw), -50%) scale(.65);
+  }
+
+  main > .home-expertise .toolkit-slide.next {
+    transform: translate(calc(-50% + 78vw), -50%) scale(.65);
+  }
+
+  /* Keep the active card fully visible */
+  main > .home-expertise .toolkit-slide.active {
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+/* Toolkit carousel — mobile layout */
+@media (max-width: 700px) {
+  main > .home-expertise .toolkit-carousel-stage {
+    height: 270px;
+    overflow: hidden;
+  }
+
+  main > .home-expertise .toolkit-carousel-viewport {
+    width: 100%;
+    overflow: hidden;
+    touch-action: pan-y;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  main > .home-expertise .toolkit-slide {
+    width: min(78vw, 340px);
+    min-height: 175px;
+    padding: 25px 22px;
+    box-sizing: border-box;
+    gap: 14px;
+  }
+
+  main > .home-expertise .toolkit-slide h3 {
+    font-size: clamp(19px, 5vw, 24px);
+    line-height: 1.2;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    border: 0;
+    outline: 0;
+  }
+
+  main > .home-expertise .toolkit-slide p {
+    font-size: 12px;
+    line-height: 1.65;
+  }
+
+  main > .home-expertise .toolkit-slide.previous {
+    pointer-events: none;
+  }
+
+  main > .home-expertise .toolkit-slide.next {
+    pointer-events: none;
+  }
+}

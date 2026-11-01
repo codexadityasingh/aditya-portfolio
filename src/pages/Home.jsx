@@ -43,7 +43,9 @@ export default function Home() {
   const projectCarouselRef = useRef(null);
   const clientCarouselRef = useRef(null);
   const toolkitViewportRef = useRef(null);
-  const toolkitTouchStart = useRef(null);
+  const toolkitDrag = useRef({ active: false, startX: 0, lastX: 0, pointerId: null });
+  const [toolkitDragX, setToolkitDragX] = useState(0);
+  const [toolkitIsDragging, setToolkitIsDragging] = useState(false);
 
   const [featuredProjects, setFeaturedProjects] = useState([]);
   const [projectsLoading, setProjectsLoading] = useState(true);
@@ -392,84 +394,40 @@ export default function Home() {
     return () => cleanups.forEach((cleanup) => cleanup());
   }, [featuredProjects, projectsLoading]);
 
-  // Swipe navigation for the overlapping toolkit cards.
-  useEffect(() => {
-    const viewport = toolkitViewportRef.current;
-    if (!viewport) return;
-
-    let startX = 0;
-    let startY = 0;
-    let pointerDown = false;
-
-    const onPointerDown = (event) => {
-      if (event.pointerType !== "mouse" || event.button !== 0) return;
-      pointerDown = true;
-      startX = event.clientX;
-      startY = event.clientY;
+  // Continuous toolkit dragging: cards follow the pointer/touch in real time,
+  // then snap to the nearest card only after release.
+  const handleToolkitPointerDown = (event) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    toolkitDrag.current = {
+      active: true,
+      startX: event.clientX,
+      lastX: event.clientX,
+      pointerId: event.pointerId,
     };
-
-    const onPointerUp = (event) => {
-      if (!pointerDown) return;
-      pointerDown = false;
-      const dx = event.clientX - startX;
-      const dy = event.clientY - startY;
-      if (Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy)) return;
-      setToolIndex((previous) =>
-        dx < 0
-          ? (previous + 1) % tools.length
-          : (previous - 1 + tools.length) % tools.length
-      );
-    };
-
-    // The toolkit is a stacked-card carousel rather than an overflow track,
-    // so handle horizontal trackpad gestures by changing the active slide.
-    let lastWheelAt = 0;
-    const onWheel = (event) => {
-      const delta = event.deltaX;
-      if (Math.abs(delta) < 8) return;
-      event.preventDefault();
-      const now = Date.now();
-      if (now - lastWheelAt < 450) return;
-      lastWheelAt = now;
-      setToolIndex((previous) =>
-        delta > 0
-          ? (previous + 1) % tools.length
-          : (previous - 1 + tools.length) % tools.length
-      );
-    };
-
-    viewport.addEventListener("pointerdown", onPointerDown);
-    viewport.addEventListener("wheel", onWheel, { passive: false });
-    window.addEventListener("pointerup", onPointerUp);
-    window.addEventListener("pointercancel", onPointerUp);
-
-    return () => {
-      viewport.removeEventListener("pointerdown", onPointerDown);
-      viewport.removeEventListener("wheel", onWheel);
-      window.removeEventListener("pointerup", onPointerUp);
-      window.removeEventListener("pointercancel", onPointerUp);
-    };
-  }, []);
-
-  const handleToolkitTouchStart = (event) => {
-    const touch = event.touches[0];
-    if (!touch) return;
-    toolkitTouchStart.current = { x: touch.clientX, y: touch.clientY };
+    setToolkitIsDragging(true);
+    event.currentTarget.setPointerCapture?.(event.pointerId);
   };
 
-  const handleToolkitTouchEnd = (event) => {
-    const start = toolkitTouchStart.current;
-    const touch = event.changedTouches[0];
-    if (!start || !touch) return;
-    const dx = touch.clientX - start.x;
-    const dy = touch.clientY - start.y;
-    toolkitTouchStart.current = null;
-    if (Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy)) return;
-    setToolIndex((previous) =>
-      dx < 0
+  const handleToolkitPointerMove = (event) => {
+    if (!toolkitDrag.current.active) return;
+    const delta = event.clientX - toolkitDrag.current.startX;
+    toolkitDrag.current.lastX = event.clientX;
+    setToolkitDragX(delta);
+  };
+
+  const finishToolkitDrag = () => {
+    if (!toolkitDrag.current.active) return;
+    const delta = toolkitDrag.current.lastX - toolkitDrag.current.startX;
+    const viewportWidth = toolkitViewportRef.current?.getBoundingClientRect().width || window.innerWidth;
+    const snapDistance = viewportWidth * 0.18;
+    if (Math.abs(delta) > snapDistance) {
+      setToolIndex((previous) => delta < 0
         ? (previous + 1) % tools.length
-        : (previous - 1 + tools.length) % tools.length
-    );
+        : (previous - 1 + tools.length) % tools.length);
+    }
+    toolkitDrag.current.active = false;
+    setToolkitDragX(0);
+    setToolkitIsDragging(false);
   };
 
   // Centre the first card on initial load.
@@ -870,8 +828,12 @@ export default function Home() {
           <div
             className="toolkit-carousel-viewport"
             ref={toolkitViewportRef}
-            onTouchStart={handleToolkitTouchStart}
-            onTouchEnd={handleToolkitTouchEnd}
+            onPointerDown={handleToolkitPointerDown}
+            onPointerMove={handleToolkitPointerMove}
+            onPointerUp={finishToolkitDrag}
+            onPointerCancel={finishToolkitDrag}
+            onLostPointerCapture={finishToolkitDrag}
+            style={{ touchAction: "pan-y", cursor: toolkitIsDragging ? "grabbing" : "grab" }}
           >
             <div className="toolkit-carousel-track">
               {tools.map((tool, index) => {
@@ -884,10 +846,20 @@ export default function Home() {
                     : position === 1
                     ? "next"
                     : "previous";
+                const signedPosition = position === 0 ? 0 : position === 1 ? 1 : -1;
+                const spacing = typeof window !== "undefined" && window.innerWidth <= 700 ? 86 : 53;
+                const offset = `calc(${signedPosition * spacing}vw + ${toolkitDragX}px)`;
+                const scale = position === 0 ? 1 : 0.78;
+                const opacity = position === 0 ? 1 : 0.5;
 
                 return (
                   <article
-                    className={`toolkit-slide ${positionClass}`}
+                    className={`toolkit-slide ${positionClass}${toolkitIsDragging ? " is-dragging" : ""}`}
+                    style={{
+                      transform: `translate(calc(-50% + ${offset}), -50%) scale(${scale})`,
+                      opacity,
+                      transition: toolkitIsDragging ? "none" : undefined,
+                    }}
                     key={tool.number}
                     aria-hidden={position !== 0}
                   >
