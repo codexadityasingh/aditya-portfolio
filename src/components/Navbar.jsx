@@ -62,10 +62,20 @@ export default function Navbar({ onTalk }) {
       <NavLink
         to="/"
         className="brand-mark"
-        aria-label="ADI Portfolio home"
+        aria-label="NEXVSN home"
         onClick={() => setMenuOpen(false)}
       >
-        ADI<span>.</span>
+        {/* NEXVSN Logo */}
+        <img
+          src="/images/logo/nexvsn-mark.png"
+          alt=""
+          className="brand-logo"
+        />
+
+        <span className="brand-divider" aria-hidden="true" />
+
+        NEXVSN<span>.</span>
+
         <small>PORTFOLIO / 2026</small>
       </NavLink>
 
@@ -121,7 +131,7 @@ export default function Navbar({ onTalk }) {
         <div className="mobile-nav-inner">
           <div className="mobile-nav-heading">
             <span>MENU / NAVIGATION</span>
-            <span>2026 — ADI</span>
+            <span>2026 — NEXVSN</span>
           </div>
 
           <nav className="mobile-nav-links" aria-label="Mobile navigation">
@@ -149,11 +159,13 @@ export default function Navbar({ onTalk }) {
 
           <div className="mobile-nav-bottom">
             <span>HAVE A PROJECT IN MIND?</span>
+
             <button type="button" onClick={handleTalk}>
               LET'S TALK <span aria-hidden="true">↗</span>
             </button>
+
             <span className="mobile-nav-copyright">
-              © 2026 ADI — CREATIVE PORTFOLIO
+              © 2026 NEXVSN — CREATIVE STUDIO
             </span>
           </div>
         </div>

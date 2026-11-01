@@ -22,8 +22,8 @@ export default function Footer() {
 
   return (
     <footer className="global-footer">
-      <Link to="/" className="footer-brand" aria-label="ADI home">
-        ADI<span>.</span>
+      <Link to="/" className="footer-brand" aria-label="NEXVSN home">
+        NEXVSN<span>.</span>
       </Link>
 
       <span className="footer-message">
@@ -47,7 +47,7 @@ export default function Footer() {
       </nav>
 
       <span className="footer-copyright">
-        © {new Date().getFullYear()} ADI
+        © {new Date().getFullYear()} NEXVSN
       </span>
     </footer>
   );

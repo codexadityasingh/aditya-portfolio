@@ -17,6 +17,9 @@ const boneJamFallback = {
   project_type: "CREATIVE COLLABORATION",
   description:
     "A collaborative website project for a Minecraft-inspired creative platform.",
+  // Bone Jam is maintained directly in the portfolio code, not the admin CMS.
+  // Reuse the same local hero screenshot referenced by the ClientWork gallery.
+  cover_image_url: "/images/bonejam/home.png",
   status: "LIVE",
   featured: true,
   sort_order: 0,
@@ -55,7 +58,17 @@ function prepareClientWorks(databaseProjects = []) {
         project.description || "A creative project brought to life.",
       route: `/client-work/${project.slug}`,
       visual: "client-website-visual",
-      symbol: "↗",
+      // Bone Jam is hardcoded, so use its existing public-folder screenshot.
+      // Other client projects continue using their uploaded database image fields.
+      cover_image_url:
+        project.cover_image_url ||
+        project.cover_image ||
+        project.image_url ||
+        project.thumbnail_url ||
+        project.featured_image ||
+        (project.slug === "bone-jam" ? "/images/bonejam/home.png" : null),
+      // The large diagonal artwork arrow is intentionally hidden on Bone Jam.
+      symbol: project.slug === "bone-jam" ? "" : "↗",
     }));
 }
 
@@ -814,6 +827,18 @@ export default function Home() {
                   aria-label={`View ${project.title} project`}
                 >
                   <div className="float-card-art">
+                    {project.cover_image_url && (
+                      <img
+                        className="project-cover-image"
+                        src={project.cover_image_url}
+                        alt={`${project.title} cover`}
+                        loading="lazy"
+                        decoding="async"
+                        onError={(event) => {
+                          event.currentTarget.style.display = "none";
+                        }}
+                      />
+                    )}
                     <span className="card-number">
                       {String(index + 1).padStart(2, "0")} / PERSONAL PROJECT
                     </span>
@@ -824,7 +849,6 @@ export default function Home() {
                     <span className="card-art-footer">
                       PERSONAL PROJECT / ADI
                     </span>
-                    <span className="project-art-symbol">↗</span>
                   </div>
 
                   <div className="float-card-info">
@@ -915,6 +939,28 @@ export default function Home() {
                   aria-label={`View ${project.title} case study`}
                 >
                   <div className="float-card-art">
+                    {(project.cover_image_url ||
+                      project.cover_image ||
+                      project.image_url ||
+                      project.thumbnail_url ||
+                      project.featured_image) && (
+                      <img
+                        className="project-cover-image"
+                        src={
+                          project.cover_image_url ||
+                          project.cover_image ||
+                          project.image_url ||
+                          project.thumbnail_url ||
+                          project.featured_image
+                        }
+                        alt={`${project.title} cover`}
+                        loading="lazy"
+                        decoding="async"
+                        onError={(event) => {
+                          event.currentTarget.style.display = "none";
+                        }}
+                      />
+                    )}
                     <span className="card-number">
                       {project.number} / CLIENT WORK
                     </span>
@@ -924,9 +970,6 @@ export default function Home() {
                     </div>
                     <span className="card-art-footer">
                       COLLABORATION / ADI
-                    </span>
-                    <span className="project-art-symbol">
-                      {project.symbol}
                     </span>
                   </div>
 

@@ -52,21 +52,42 @@ export default function Loader({ onComplete }) {
   return (
     <div className="loader-screen">
       <div className="loader-content">
+
+        {/* NEXVSN Brand */}
         <div className="loader-brand">
-          ADI<span>.</span>
+          <img
+            src="/images/logo/nexvsn-mark.png"
+            alt=""
+            className="loader-brand-logo"
+          />
+
+          <span className="loader-brand-divider" />
+
+          <span className="loader-brand-name">
+            NEXVSN<span>.</span>
+          </span>
         </div>
 
+        {/* Central Orbital Animation */}
         <div className="loader-center">
           <div className="loader-orbit">
-            <div className="loader-orbit-inner" />
+            <div className="loader-orbit-inner">
+              <img
+                src="/images/logo/nexvsn-mark.png"
+                alt=""
+                className="loader-orbit-logo"
+              />
+            </div>
+
             <div className="loader-dot" />
           </div>
 
           <p>CREATING DIGITAL EXPERIENCES</p>
         </div>
 
+        {/* Loading Progress */}
         <div className="loader-bottom">
-          <span>PORTFOLIO / 2026</span>
+          <span>NEXVSN / DIGITAL STUDIO</span>
 
           <div
             className="loader-progress"
@@ -83,6 +104,7 @@ export default function Loader({ onComplete }) {
 
           <span>{String(progress).padStart(2, "0")}%</span>
         </div>
+
       </div>
     </div>
   );

@@ -9974,3 +9974,137 @@ main > .home-expertise .toolkit-slide {
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
+
+
+
+
+/* =========================================
+   HOMEPAGE PROJECT COVER IMAGES
+   Append this block to the END of app.css
+========================================= */
+
+.float-card-art {
+  isolation: isolate;
+}
+
+.project-cover-image {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transition: transform 0.7s ease;
+}
+
+/* Keep the existing typography readable over uploaded cover images. */
+.float-card-art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.28) 0%,
+    rgba(0, 0, 0, 0.12) 38%,
+    rgba(0, 0, 0, 0.48) 100%
+  );
+}
+
+.float-card-art > .card-number,
+.float-card-art > .card-art-type,
+.float-card-art > .card-art-footer,
+.float-card-art > .project-art-symbol {
+  position: relative;
+  z-index: 2;
+}
+
+/* NEXVSN Brand Logo */
+.brand-logo {
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
+}
+
+.brand-divider {
+  display: block;
+  width: 1px;
+  height: 34px;
+  background: rgba(255, 255, 255, 0.28);
+  margin: 0 12px;
+  flex-shrink: 0;
+}
+
+/* =================================
+   NEXVSN LOADER BRANDING
+================================= */
+
+.loader-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.loader-brand-logo {
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
+}
+
+.loader-brand-divider {
+  width: 1px;
+  height: 30px;
+  background: rgba(255, 255, 255, 0.28);
+  flex-shrink: 0;
+}
+
+.loader-brand-name {
+  color: #fff;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -1.5px;
+  line-height: 1;
+}
+
+.loader-brand-name span {
+  color: #777;
+}
+
+/* Central NEXVSN symbol */
+
+.loader-orbit-inner {
+  display: grid;
+  place-items: center;
+}
+
+.loader-orbit-logo {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  display: block;
+}
+
+/* Mobile adjustments */
+
+@media (max-width: 600px) {
+  .loader-brand-logo {
+    width: 38px;
+    height: 38px;
+  }
+
+  .loader-brand-name {
+    font-size: 23px;
+  }
+
+  .loader-orbit-logo {
+    width: 28px;
+    height: 28px;
+  }
+}
