@@ -10108,3 +10108,65 @@ main > .home-expertise .toolkit-slide {
     height: 28px;
   }
 }
+/* Do not enlarge gallery screenshots on hover; that would crop edges. */
+.client-gallery-card:hover .client-gallery-image img {
+  transform: none;
+}
+
+/* Keep the wide first image full-width without forcing a crop ratio. */
+.client-gallery-card-wide {
+  grid-column: 1 / -1;
+}
+
+/* PERSONAL PROJECT DETAIL GALLERY */
+.personal-detail-gallery-grid {
+  align-items: start;
+}
+
+.personal-detail-gallery-grid figure {
+  min-width: 0;
+  height: auto;
+  overflow: hidden;
+}
+
+.personal-detail-gallery-grid img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  aspect-ratio: auto;
+  object-fit: contain;
+  object-position: center;
+  transform: none;
+}
+
+.personal-detail-gallery-grid figure:hover img {
+  transform: none;
+}
+
+/* ADMIN: show the complete existing gallery thumbnail in the editor. */
+.admin-existing-gallery-item img {
+  width: 100%;
+  height: 110px;
+  object-fit: contain;
+  object-position: center;
+  background: #111;
+}
+
+/* MOBILE: preserve natural image height at every screen size. */
+@media (max-width: 760px) {
+  .client-gallery-image,
+  .client-gallery-card-wide .client-gallery-image {
+    min-height: 0;
+    height: auto;
+    aspect-ratio: auto;
+  }
+
+  .client-gallery-image img,
+  .personal-detail-gallery-grid img {
+    width: 100%;
+    height: auto;
+    aspect-ratio: auto;
+    object-fit: contain;
+  }
+}
